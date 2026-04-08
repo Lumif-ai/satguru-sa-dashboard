@@ -158,6 +158,28 @@
   .accordion-body { transition:max-height 0.3s ease, opacity 0.2s ease; overflow:hidden; }
   .accordion-body.collapsed { max-height:0 !important; opacity:0; padding-top:0 !important; padding-bottom:0 !important; }
 
+  /* Reply cards */
+  .reply-card { background:var(--white); border:1px solid var(--g200); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
+  .reply-card-hd { display:flex; align-items:center; justify-content:space-between; padding:14px 18px 10px; border-bottom:1px solid var(--g100); }
+  .reply-card-who { display:flex; align-items:center; gap:10px; }
+  .reply-avatar { width:32px; height:32px; border-radius:50%; background:var(--brand-10); color:var(--brand); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; flex-shrink:0; }
+  .reply-name { font-size:13px; font-weight:700; }
+  .reply-meta { font-size:10px; color:var(--g400); margin-top:1px; }
+  .reply-badges { display:flex; gap:6px; align-items:center; }
+  .reply-card-bd { padding:14px 18px; }
+  .reply-msg { padding:12px 14px; border-radius:10px; font-size:12px; line-height:1.6; margin-bottom:8px; white-space:pre-wrap; word-break:break-word; }
+  .reply-msg.outbound { background:var(--g50); border:1px solid var(--g200); border-bottom-left-radius:3px; }
+  .reply-msg.inbound { background:var(--brand-05); border:1px solid var(--brand-20); border-bottom-right-radius:3px; }
+  .reply-msg-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; }
+  .reply-msg-label.out { color:var(--g400); }
+  .reply-msg-label.in { color:var(--brand); }
+  .reply-msg-ts { font-size:9px; color:var(--g400); margin-top:4px; text-align:right; }
+  .reply-resp-time { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--g500); background:var(--g50); border:1px solid var(--g200); border-radius:4px; padding:2px 8px; }
+  .reply-empty { text-align:center; color:var(--g400); padding:40px 20px; font-size:12px; }
+  .reply-count { font-size:12px; color:var(--g500); margin-bottom:14px; }
+  .reply-filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .reply-filters .fsel { min-width:140px; }
+
   .loading { display:flex; align-items:center; justify-content:center; padding:60px; color:var(--g400); font-size:12px; }
   .spinner { width:14px; height:14px; border:2px solid var(--g200); border-top-color:var(--brand); border-radius:50%; animation:spin 0.5s linear infinite; margin-right:8px; }
   @keyframes spin { to { transform:rotate(360deg); } }
@@ -240,6 +262,7 @@
     <div class="nav-tab active" data-view="exec">Executive View</div>
     <div class="nav-tab" data-view="detail">Detailed View</div>
     <div class="nav-tab" data-view="tracker">Weekly Tracker</div>
+    <div class="nav-tab" data-view="replies">Replies</div>
   </div>
 
   <!-- FILTER BAR (shared) -->
@@ -462,6 +485,21 @@
 
   </div>
 
+  <!-- ============================================================ -->
+  <!-- REPLIES VIEW -->
+  <!-- ============================================================ -->
+  <div class="view" id="v-replies">
+    <div class="reply-filters">
+      <span class="fbar-label">Filter Replies</span>
+      <select class="fsel" id="rCampaign"><option value="">All Campaigns</option></select>
+      <select class="fsel" id="rSender"><option value="">All Senders</option></select>
+      <select class="fsel" id="rChannel"><option value="">All Channels</option></select>
+      <select class="fsel" id="rCompany"><option value="">All Companies</option></select>
+    </div>
+    <div class="reply-count" id="replyCount"></div>
+    <div id="replyCards"></div>
+  </div>
+
   <div class="footer">Powered by <a href="https://lumif.ai">lumif.ai</a></div>
 </div>
 
@@ -527,7 +565,7 @@ function applyF(){
     const selMatch=Object.entries(FM).every(([id,f])=>{const v=document.getElementById(id).value;return!v||r[f]===v});
     if(!selMatch)return false;
     if(dFrom||dTo){
-      const d=toDateStr(r['Last Outbound'])||toDateStr(r['Campaign Started']);
+      const d=toDateStr(r['First Email Sent'])||toDateStr(r['First LI Connection Sent'])||toDateStr(r['First LI DM Sent'])||toDateStr(r['Last Outbound'])||toDateStr(r['Campaign Started']);
       if(!d)return false;
       if(dFrom&&d<dFrom)return false;
       if(dTo&&d>dTo)return false;
@@ -556,6 +594,16 @@ document.querySelectorAll('.step-tab').forEach(tab=>{
     renderStepProgress();
   });
 });
+
+// === TAB SWITCHING ===
+function switchToTab(viewName){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const tab=document.querySelector(`.nav-tab[data-view="${viewName}"]`);
+  if(tab)tab.classList.add('active');
+  const view=document.getElementById('v-'+viewName);
+  if(view)view.classList.add('active');
+}
 
 // === DRILL-DOWN ENGINE ===
 const DRILL_FILTERS={
@@ -589,6 +637,12 @@ const DRILL_COLS={
 const DRILL_TITLES={leads:'All Leads',companies:'All Companies',emails_sent:'Leads Emailed',li_requests:'LinkedIn Requests Sent',li_dms:'LinkedIn DMs Sent',replies:'Leads Who Replied',email_targeted:'Email Leads Targeted',email_replies:'Email Replies',email_bounced:'Bounced Emails',email_delivered:'Emails Delivered',li_targeted:'LinkedIn Leads Targeted',li_sent:'LinkedIn Requests Sent',li_accepted:'LinkedIn Connections Accepted',li_dm_replies:'LinkedIn Replies'};
 
 function openDrill(key,titleOverride){
+  // Reply drills redirect to Replies tab
+  if(key==='replies'||key==='email_replies'||key==='li_dm_replies'){
+    closeDrill();
+    switchToTab('replies');
+    return;
+  }
   const filterFn=DRILL_FILTERS[key];
   if(!filterFn)return;
   const leads=filterFn();
@@ -629,7 +683,13 @@ document.addEventListener('click',function(e){
   const el=e.target.closest('[data-drill]');
   if(el){
     e.stopPropagation();
-    openDrill(el.dataset.drill);
+    const key=el.dataset.drill;
+    if(key==='replies'||key==='email_replies'||key==='li_dm_replies'){
+      closeDrill();
+      switchToTab('replies');
+      return;
+    }
+    openDrill(key);
   }
 });
 
@@ -728,6 +788,139 @@ function getEmailStepSegments(filteredEmailTotal){
   });
   return segs;
 }
+
+// === REPLIES TAB ===
+function formatTimestamp(ts){
+  if(!ts)return'';
+  try{const d=new Date(ts);if(isNaN(d.getTime()))return ts;return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});}catch(e){return ts;}
+}
+
+function calcResponseTime(sentTs,replyTs){
+  if(!sentTs||!replyTs)return'';
+  try{
+    const s=new Date(sentTs),r=new Date(replyTs);
+    if(isNaN(s.getTime())||isNaN(r.getTime()))return'';
+    const diffMs=r-s;if(diffMs<0)return'';
+    const hrs=Math.floor(diffMs/3600000);
+    const mins=Math.floor((diffMs%3600000)/60000);
+    if(hrs>=24){const days=Math.floor(hrs/24);const remHrs=hrs%24;return days+'d '+(remHrs>0?remHrs+'h':'');}
+    if(hrs>0)return hrs+'h '+mins+'m';
+    return mins+'m';
+  }catch(e){return'';}
+}
+
+function getInitials(name){
+  if(!name)return'?';
+  return name.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function renderReplies(filterLead){
+  let repliedLeads=FLT.filter(r=>N(r['Total Replies'])>0);
+
+  const rCamp=document.getElementById('rCampaign').value;
+  const rSender=document.getElementById('rSender').value;
+  const rChan=document.getElementById('rChannel').value;
+  const rComp=document.getElementById('rCompany').value;
+  if(rCamp)repliedLeads=repliedLeads.filter(r=>r['Campaign']===rCamp);
+  if(rSender)repliedLeads=repliedLeads.filter(r=>r['Sender']===rSender);
+  if(rChan)repliedLeads=repliedLeads.filter(r=>r['Channel Strategy']===rChan);
+  if(rComp)repliedLeads=repliedLeads.filter(r=>r['Company Name']===rComp);
+
+  if(filterLead)repliedLeads=repliedLeads.filter(r=>r['Conversation ID']===filterLead);
+
+  const allReplied=FLT.filter(r=>N(r['Total Replies'])>0);
+  populateReplyFilter('rCampaign','Campaign',allReplied,'All Campaigns');
+  populateReplyFilter('rSender','Sender',allReplied,'All Senders');
+  populateReplyFilter('rChannel','Channel Strategy',allReplied,'All Channels');
+  populateReplyFilter('rCompany','Company Name',allReplied,'All Companies');
+
+  document.getElementById('replyCount').textContent=repliedLeads.length+' lead'+(repliedLeads.length!==1?'s':'')+' replied';
+
+  if(repliedLeads.length===0){
+    document.getElementById('replyCards').innerHTML='<div class="reply-empty">No replies found matching your filters</div>';
+    return;
+  }
+
+  let html='';
+  repliedLeads.forEach(lead=>{
+    const convId=lead['Conversation ID'];
+    const name=lead['Person Name']||'Unknown';
+    const company=lead['Company Name']||'';
+    const title=lead['Person Title']||'';
+    const email=lead['Person Email']||'';
+    const campaign=lead['Campaign']||'';
+
+    const steps=STEP_DETAIL.filter(sd=>sd['Conversation ID']===convId&&(sd['Outbound Message']||sd['Reply Message']));
+
+    const emailReplies=N(lead['Email Replies']);
+    const liReplies=N(lead['LI Replies']);
+    const channelBadges=[];
+    if(emailReplies>0)channelBadges.push('<span class="badge b-brand">Email</span>');
+    if(liReplies>0)channelBadges.push('<span class="badge b-brand" style="background:rgba(59,130,246,0.1);color:#3B82F6;">LinkedIn</span>');
+
+    const emailSentAt=lead['First Email Sent']||'';
+    const emailResponseAt=lead['First Email Response']||'';
+    const liSentAt=lead['First LI Connection Sent']||lead['First LI DM Sent']||'';
+    const liResponseAt=lead['First LI Response']||'';
+    const respTime=calcResponseTime(emailSentAt,emailResponseAt)||calcResponseTime(liSentAt,liResponseAt);
+
+    html+=`<div class="reply-card">
+      <div class="reply-card-hd">
+        <div class="reply-card-who">
+          <div class="reply-avatar">${getInitials(name)}</div>
+          <div>
+            <div class="reply-name">${name}</div>
+            <div class="reply-meta">${title}${title&&company?' · ':''}${company}${email?' · '+email:''}</div>
+          </div>
+        </div>
+        <div class="reply-badges">
+          ${channelBadges.join('')}
+          ${campaign?'<span class="badge b-gray">'+campaign+'</span>':''}
+          ${respTime?'<span class="reply-resp-time">&#9201; '+respTime+'</span>':''}
+        </div>
+      </div>
+      <div class="reply-card-bd">`;
+
+    if(steps.length>0){
+      steps.forEach(sd=>{
+        const stepLabel='Step '+sd['Step Order']+': '+(sd['Step Channel']||'');
+        const outMsg=sd['Outbound Message']||'';
+        const replyMsg=sd['Reply Message']||'';
+        const sentAt=sd['Email Sent At']||sd['LI Connection Sent At']||sd['LI DM Sent At']||'';
+        if(outMsg){
+          html+=`<div class="reply-msg outbound">
+            <div class="reply-msg-label out">&#9654; Sent — ${stepLabel}</div>
+            ${outMsg}
+            ${sentAt?'<div class="reply-msg-ts">'+formatTimestamp(sentAt)+'</div>':''}
+          </div>`;
+        }
+        if(replyMsg){
+          html+=`<div class="reply-msg inbound">
+            <div class="reply-msg-label in">&#9664; Reply</div>
+            ${replyMsg}
+          </div>`;
+        }
+      });
+    } else {
+      html+='<div style="font-size:11px;color:var(--g400);padding:8px 0;">Reply detected but message content not yet available in Step Detail sheet. Run the updated Apps Script to populate.</div>';
+    }
+
+    html+=`</div></div>`;
+  });
+
+  document.getElementById('replyCards').innerHTML=html;
+}
+
+function populateReplyFilter(elId,field,data,defaultLabel){
+  const sel=document.getElementById(elId);
+  const cur=sel.value;
+  const vals=[...new Set(data.map(r=>r[field]).filter(Boolean))].sort();
+  sel.innerHTML=`<option value="">${defaultLabel}</option>`+vals.map(v=>`<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join('');
+}
+
+['rCampaign','rSender','rChannel','rCompany'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>renderReplies());
+});
 
 // === RENDER ===
 function render(){
@@ -1161,6 +1354,9 @@ function render(){
   renderStepProgress();
 
   renderTracker(D);
+
+  // Replies tab
+  renderReplies();
 }
 
 function renderStepProgress(){
