@@ -233,7 +233,7 @@
       <div class="sc primary"><div class="sc-v" id="exLeads">--</div><div class="sc-l">Leads</div></div>
       <div class="sc"><div class="sc-v" id="exCos">--</div><div class="sc-l">Companies</div></div>
       <div class="sc"><div class="sc-v" id="exEmailS">--</div><div class="sc-l">Emails (Unique / Total)</div></div>
-      <div class="sc"><div class="sc-v" id="exLiS">--</div><div class="sc-l">LI Requests Sent</div></div>
+      <div class="sc"><div class="sc-v" id="exLiS">--</div><div class="sc-l">LinkedIn Requests Sent</div></div>
       <div class="sc primary"><div class="sc-v" id="exReply">0</div><div class="sc-l">Replies</div></div>
       <div class="sc primary"><div class="sc-v" id="exMeet">0</div><div class="sc-l">Meetings Booked</div></div>
     </div>
@@ -256,6 +256,7 @@
       <div class="exec-card">
         <div class="exec-card-title">A/B Message Performance</div>
         <div id="exAB"></div>
+        <div id="exABNote"></div>
       </div>
     </div>
 
@@ -270,12 +271,13 @@
       <div class="sc primary"><div class="sc-v" id="d_leads">--</div><div class="sc-l">Leads</div></div>
       <div class="sc"><div class="sc-v" id="d_cos">--</div><div class="sc-l">Companies</div></div>
       <div class="sc"><div class="sc-v" id="d_email">--</div><div class="sc-l">Emails Sent</div></div>
-      <div class="sc"><div class="sc-v" id="d_li">--</div><div class="sc-l">LI Requests</div></div>
+      <div class="sc"><div class="sc-v" id="d_li">--</div><div class="sc-l">LinkedIn Requests</div></div>
       <div class="sc primary"><div class="sc-v" id="d_reply">--</div><div class="sc-l">Replies</div></div>
       <div class="sc primary"><div class="sc-v" id="d_meet">--</div><div class="sc-l">Meetings</div></div>
     </div>
 
-    <div style="display:flex;gap:10px;margin-bottom:16px;" id="dEnrichment"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;" id="dEnrichment"></div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;" id="dEmailStatus"></div>
 
     <div class="g2">
       <div class="card">
@@ -291,7 +293,6 @@
           <div class="chart-w"><canvas id="chPipeLi"></canvas></div>
           <ul class="ml" id="d_mL" style="margin-top:12px;border-top:1px solid var(--g100);padding-top:10px;"></ul>
         </div>
-        <div class="bench"><span class="bdot"></span>Prior benchmark: 16.7% LinkedIn acceptance rate</div>
       </div>
     </div>
 
@@ -299,21 +300,25 @@
       <div class="card">
         <div class="card-hd"><div class="card-t">A/B Message Testing</div><div class="card-s">Version A vs B (aggregated across senders)</div></div>
         <div class="card-bd" id="d_ab"></div>
+        <div id="d_abNote" style="padding:4px 18px 14px;"></div>
       </div>
       <div class="card">
         <div class="card-hd"><div class="card-t">Sender Comparison</div><div class="card-s">Engagement by sender persona</div></div>
-        <div class="card-bd"><div class="chart-w"><canvas id="chSender"></canvas></div></div>
-        <div class="bench"><span class="bdot"></span>Prior: Renier 19.1% | Samihah 16.9% LI acceptance</div>
+        <div class="card-bd">
+          <div class="chart-w"><canvas id="chSender"></canvas></div>
+          <div id="d_senderTable" style="margin-top:12px;border-top:1px solid var(--g100);padding-top:10px;"></div>
+        </div>
       </div>
     </div>
 
     <div class="card mb16">
       <div class="card-hd"><div class="card-t">Channel Strategy Breakdown</div><div class="card-s">Hybrid vs single-channel</div></div>
       <div style="padding:0;">
-        <table class="dt"><thead><tr><th>Strategy</th><th class="r">Leads</th><th class="r">Email Sent</th><th class="r">Delivered</th><th class="r">LI Sent</th><th class="r">LI Accepted</th><th class="r">Replies</th></tr></thead><tbody id="d_chTb"></tbody></table>
+        <table class="dt"><thead><tr><th>Strategy</th><th class="r">Leads</th><th class="r">Email Sent</th><th class="r">LinkedIn Sent</th><th class="r">LinkedIn Accepted</th><th class="r">Email Replies</th><th class="r">LinkedIn Replies</th></tr></thead><tbody id="d_chTb"></tbody></table>
       </div>
     </div>
 
+    <!-- Send timing charts - hidden until enough data (uncomment when needed)
     <div class="g2">
       <div class="card">
         <div class="card-hd"><div class="card-t">Send Day Distribution</div><div class="card-s">Outreach activity by day of week (SAST)</div></div>
@@ -324,12 +329,35 @@
         <div class="card-bd"><div class="chart-w"><canvas id="chSendTime"></canvas></div></div>
       </div>
     </div>
+    -->
+
+    <div class="card mb16">
+      <div class="card-hd">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div><div class="card-t">Sequence Step Progression</div><div class="card-s">How far leads have progressed through each step of the outreach sequence</div></div>
+          <select id="stepCampFilter" class="fsel" style="min-width:160px;"></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--g200);padding:0 18px;">
+        <div class="step-tab active" data-step-ch="email" style="padding:8px 16px;font-size:11px;font-weight:600;color:var(--brand);border-bottom:2px solid var(--brand);cursor:pointer;">Email</div>
+        <div class="step-tab" data-step-ch="linkedin" style="padding:8px 16px;font-size:11px;font-weight:600;color:var(--g400);border-bottom:2px solid transparent;cursor:pointer;">LinkedIn</div>
+      </div>
+      <div style="padding:0;">
+        <table class="dt" id="d_stepTable">
+          <thead id="d_stepHead"></thead>
+          <tbody id="d_stepBody"></tbody>
+        </table>
+      </div>
+      <div id="d_stepNote" style="padding:8px 18px;font-size:10px;color:var(--g400);"></div>
+    </div>
 
     <div class="card mb16">
       <div class="card-hd"><div class="card-t">Company Coverage</div><div class="card-s" id="d_coSub">--</div></div>
-      <div class="card-bd" style="padding:10px 18px;">
-        <div id="d_coBars"></div>
-        <div class="co-lg"><div class="co-li"><div class="co-ld" style="background:var(--brand);"></div>Email</div><div class="co-li"><div class="co-ld" style="background:var(--g300);"></div>LinkedIn</div><div class="co-li"><div class="co-ld" style="background:var(--g100);"></div>Queued</div></div>
+      <div style="padding:0;max-height:400px;overflow-y:auto;">
+        <table class="dt" id="d_coTable">
+          <thead><tr><th>Company</th><th class="r">Leads</th><th class="r">Email Sent</th><th class="r">LinkedIn Sent</th><th class="r">Email Replies</th><th class="r">LinkedIn Replies</th></tr></thead>
+          <tbody id="d_coBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -400,6 +428,8 @@
 <script>
 const GSHEET_ID='1Tm2r2PlI14uLcJ5ghsQgHG2b9o9hVzNB152WbV-JtsA';
 const SHEET_NAME='Lead Summary';
+const STEP_PERF_SHEET='Step Performance';
+let STEP_PERF=[];  // step performance data from separate sheet
 
 // === NORMALIZATION ===
 function normVer(seq){
@@ -452,6 +482,18 @@ function applyF(){FLT=ALL.filter(r=>Object.entries(FM).every(([id,f])=>{const v=
 function resetF(){Object.keys(FM).forEach(id=>{document.getElementById(id).value=''});applyF()}
 Object.keys(FM).forEach(id=>document.getElementById(id).addEventListener('change',applyF));
 document.getElementById('fReset').addEventListener('click',resetF);
+document.getElementById('stepCampFilter').addEventListener('change',()=>renderStepProgress());
+let stepActiveTab='email';
+document.querySelectorAll('.step-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.step-tab').forEach(t=>{t.classList.remove('active');t.style.color='var(--g400)';t.style.borderBottomColor='transparent'});
+    tab.classList.add('active');
+    stepActiveTab=tab.dataset.stepCh;
+    const c=stepActiveTab==='email'?'var(--brand)':'#3B82F6';
+    tab.style.color=c;tab.style.borderBottomColor=c;
+    renderStepProgress();
+  });
+});
 
 // === RENDER ===
 function render(){
@@ -526,7 +568,6 @@ function render(){
   const emailFunnel=[
     {label:'Leads Targeted (Email)',value:emailPool},
     {label:'Emails Sent',value:eUniq},
-    {label:'Emails Delivered',value:eD},
     {label:'Email Replies',value:eR},
   ];
   document.getElementById('exEmailFunnel').innerHTML=buildFunnel(emailFunnel,emailPool);
@@ -552,12 +593,14 @@ function render(){
       const liSent=S(rows,'LI Connections Sent');
       const liSched=S(rows,'LI Connection Actions');
       abH+=`<div class="exec-stat"><span class="exec-stat-k">Version ${l}</span><span class="exec-stat-v">${rows.length} leads</span></div>`;
-      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">Email sent / delivered</span><span class="exec-stat-v" style="font-size:12px;">${S(rows,'Email Sent')} / ${S(rows,'Email Delivered')}</span></div>`;
-      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">LI sent / accepted</span><span class="exec-stat-v" style="font-size:12px;">${liSent} / ${S(rows,'LI Connections Accepted')}</span></div>`;
+      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">Email Sent</span><span class="exec-stat-v" style="font-size:12px;">${S(rows,'Email Sent')}</span></div>`;
+      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">LinkedIn sent / accepted</span><span class="exec-stat-v" style="font-size:12px;">${liSent} / ${S(rows,'LI Connections Accepted')}</span></div>`;
       if(liSched>0&&liSent===0){
         abH+=`<div style="padding-left:12px;font-size:9px;color:var(--g400);margin-top:-2px;margin-bottom:4px;">${liSched} LinkedIn actions scheduled, pending execution</div>`;
       }
-      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">Replies</span><span class="exec-stat-v${rep>0?' hl':' z'}" style="font-size:12px;">${rep}</span></div>`;
+      const eRep=S(rows,'Email Replies'),lRep=S(rows,'LI Replies');
+      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">Email Replies</span><span class="exec-stat-v${eRep>0?' hl':' z'}" style="font-size:12px;">${eRep}</span></div>`;
+      abH+=`<div class="exec-stat"><span class="exec-stat-k" style="padding-left:12px;color:var(--g400);">LinkedIn Replies</span><span class="exec-stat-v${lRep>0?' hl':' z'}" style="font-size:12px;">${lRep}</span></div>`;
     });
   } else { abH='<div style="color:var(--g400);font-size:12px;">No A/B test data in current filter</div>'; }
   document.getElementById('exAB').innerHTML=abH;
@@ -575,6 +618,26 @@ function render(){
     enrichChip('Email + LinkedIn',hasBoth)+
     enrichChip('Email Only',emailOnly)+
     enrichChip('LinkedIn Only',liOnly);
+
+  // Email Delivery Status distribution
+  const statusCounts={};
+  D.forEach(r=>{const s=r['Email Delivery Status']||'Unknown';statusCounts[s]=(statusCounts[s]||0)+1});
+  const statusOrder=['Delivered','Bounced','Failed','Processing','Sent','Not Sent','Replied'];
+  const statusColors={'Delivered':'#22C55E','Bounced':'#EF4444','Failed':'#F97316','Processing':'#3B82F6','Sent':'#94A3B8','Not Sent':'#CBD5E1','Replied':'#E94D35','Unknown':'#CBD5E1'};
+  function statusChip(label,count){
+    const c=statusColors[label]||'#CBD5E1';
+    const pct=D.length>0?(count/D.length*100).toFixed(0):0;
+    return `<div style="display:inline-flex;align-items:center;gap:6px;background:${c}10;border:1px solid ${c}30;border-radius:6px;padding:4px 10px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:${c};flex-shrink:0;"></span>
+      <span style="font-size:10px;color:var(--g600);">${label}:</span>
+      <span style="font-size:12px;font-weight:700;color:var(--g900);">${count}</span>
+      <span style="font-size:9px;color:var(--g400);">(${pct}%)</span>
+    </div>`;
+  }
+  let statusHtml='';
+  statusOrder.forEach(s=>{if(statusCounts[s])statusHtml+=statusChip(s,statusCounts[s])});
+  if(statusCounts['Unknown'])statusHtml+=statusChip('Unknown',statusCounts['Unknown']);
+  document.getElementById('dEmailStatus').innerHTML=statusHtml;
 
   // Email Funnel Chart (detailed view)
   function funnelChart(canvasId,steps){
@@ -623,7 +686,6 @@ function render(){
   funnelChart('chPipeEmail',[
     {label:'Leads Targeted',value:dEmailPool},
     {label:'Emails Sent',value:eUniq},
-    {label:'Delivered',value:eD},
     {label:'Replies',value:eR},
   ]);
   funnelChart('chPipeLi',[
@@ -640,7 +702,6 @@ function render(){
   document.getElementById('d_mE').innerHTML=mli([
     ['Total Emails Sent',eS],
     ['Sends per Prospect',eSendsPerLead],
-    ['Delivery Rate',eS>0?(eD/eS*100).toFixed(1)+'%':'--'],
     ['Bounced',eB],
     ['Reply Rate',eS>0?(eR/eS*100).toFixed(1)+'%':'--'],
   ]);
@@ -656,27 +717,72 @@ function render(){
     abD+=`<div style="padding:0 14px 10px;${l==='B'?'border-left:1px solid var(--g100);':''}">
       <div style="font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;margin-bottom:8px;">Version ${l}</div>
       <div style="font-size:20px;font-weight:800;">${rows.length} <span style="font-size:11px;font-weight:500;color:var(--g400);">leads</span></div>
-      <ul class="ml" style="margin-top:8px;">${mli([['Email Sent',S(rows,'Email Sent')],['Delivered',S(rows,'Email Delivered')],['LI Sent',S(rows,'LI Connections Sent')],['LI Accepted',S(rows,'LI Connections Accepted')],['Replies',S(rows,'Total Replies')]])}</ul>
+      <ul class="ml" style="margin-top:8px;">${(()=>{
+        const abES=S(rows,'Email Sent'),abER=S(rows,'Email Replies'),abLS=S(rows,'LI Connections Sent'),abLA=S(rows,'LI Connections Accepted'),abLR=S(rows,'LI Replies');
+        const p=(n,d)=>d>0?' <span style="font-size:9px;color:var(--g400);">('+((n/d)*100).toFixed(1)+'%)</span>':'';
+        return mli([['Email Sent',abES],['Email Replies',''+abER+p(abER,abES)],['Conn. Requests Sent',abLS],['Connections Accepted',''+abLA+p(abLA,abLS)],['LinkedIn Replies',''+abLR+p(abLR,abLS)]]);
+      })()}</ul>
       ${S(rows,'LI Connection Actions')>0&&S(rows,'LI Connections Sent')===0?`<div style="font-size:9px;color:var(--g400);margin-top:4px;">${S(rows,'LI Connection Actions')} LinkedIn actions scheduled, pending execution</div>`:''}
     </div>`;
   });
   abD+='</div>';
   document.getElementById('d_ab').innerHTML=abD;
 
+  // A/B note: show excluded leads (both views)
+  const abTotal=vA.length+vB.length;
+  const abExcluded=D.length-abTotal;
+  const abNoteHtml=(()=>{
+    if(abExcluded<=0)return'';
+    const exHybrid=D.filter(r=>r.channel==='Hybrid'&&r.version!=='A'&&r.version!=='B').length;
+    const exEmailOnly=D.filter(r=>r.channel==='Email Only'&&r.version!=='A'&&r.version!=='B').length;
+    const exLiOnly=D.filter(r=>r.channel==='LinkedIn Only'&&r.version!=='A'&&r.version!=='B').length;
+    let parts=[];
+    if(exHybrid>0)parts.push(`${exHybrid} Hybrid`);
+    if(exEmailOnly>0)parts.push(`${exEmailOnly} Email Only`);
+    if(exLiOnly>0)parts.push(`${exLiOnly} LinkedIn Only`);
+    return `<div style="font-size:10px;color:var(--brand);background:var(--brand-05);border:1px solid var(--brand-20);border-radius:6px;padding:8px 12px;margin-top:8px;">
+      &#9432; Showing <strong>${abTotal}</strong> of ${D.length} leads in A/B-tested sequences. <strong>${abExcluded}</strong> leads in sequences without A/B versioning${parts.length?' ('+parts.join(', ')+')':''}.
+    </div>`;
+  })();
+  document.getElementById('d_abNote').innerHTML=abNoteHtml;
+  document.getElementById('exABNote').innerHTML=abNoteHtml;
+
   // Sender chart
   const sG=G(D,'sender');const sN=Object.keys(sG).sort();
   charts.push(new Chart(document.getElementById('chSender'),{type:'bar',data:{labels:sN.map(s=>`${s} (${sG[s].length})`),datasets:[
     {label:'Email Sent',data:sN.map(s=>S(sG[s],'Email Sent')),backgroundColor:'rgba(233,77,53,0.7)',borderRadius:4},
-    {label:'Delivered',data:sN.map(s=>S(sG[s],'Email Delivered')),backgroundColor:'rgba(233,77,53,0.35)',borderRadius:4},
-    {label:'LI Sent',data:sN.map(s=>S(sG[s],'LI Connections Sent')),backgroundColor:'rgba(148,163,184,0.5)',borderRadius:4},
-    {label:'Replies',data:sN.map(s=>S(sG[s],'Total Replies')),backgroundColor:'rgba(233,77,53,1)',borderRadius:4},
+    {label:'LinkedIn Sent',data:sN.map(s=>S(sG[s],'LI Connections Sent')),backgroundColor:'rgba(148,163,184,0.5)',borderRadius:4},
+    {label:'Email Replies',data:sN.map(s=>S(sG[s],'Email Replies')),backgroundColor:'rgba(233,77,53,1)',borderRadius:4},
+    {label:'LinkedIn Replies',data:sN.map(s=>S(sG[s],'LI Replies')),backgroundColor:'rgba(100,116,139,0.9)',borderRadius:4},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',font:{family:'Inter',size:10},padding:10}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10}}},y:{grid:{color:'#F1F5F9'},beginAtZero:true,ticks:{font:{size:9}}}}}}));
+
+  // Sender table (full funnel breakdown per sender)
+  let stH='<table class="dt" style="font-size:10px;"><thead><tr><th rowspan="2" style="vertical-align:bottom;">Sender</th><th rowspan="2" class="r" style="vertical-align:bottom;">Leads</th><th colspan="2" style="text-align:center;border-bottom:2px solid var(--brand-35);color:var(--brand);font-size:8px;">EMAIL</th><th colspan="4" style="text-align:center;border-bottom:2px solid #3B82F6;color:#3B82F6;font-size:8px;">LINKEDIN</th><th rowspan="2" class="r" style="vertical-align:bottom;">Reply Rate</th></tr><tr><th class="r">Sent</th><th class="r">Replies</th><th class="r">Conn. Requests</th><th class="r">Accepted</th><th class="r">DMs Sent</th><th class="r">Replies</th></tr></thead><tbody>';
+  sN.forEach(s=>{
+    const r=sG[s];const eS_s=S(r,'Email Sent');const eR_s=S(r,'Email Replies');
+    const lS_s=S(r,'LI Connections Sent');const lA_s=S(r,'LI Connections Accepted');
+    const lM_s=S(r,'LI Messages Sent');const lR_s=S(r,'LI Replies');
+    const tT_s=eS_s+lS_s;const tR_s=eR_s+lR_s;
+    const rr=tT_s>0?(tR_s/tT_s*100).toFixed(1)+'%':'--';
+    const eRpct=eS_s>0?' <span style="font-size:9px;color:var(--g400);font-weight:400;">('+((eR_s/eS_s)*100).toFixed(1)+'%)</span>':'';
+    const lApct=lS_s>0?' <span style="font-size:9px;color:var(--g400);font-weight:400;">('+((lA_s/lS_s)*100).toFixed(1)+'%)</span>':'';
+    const lRpct=lS_s>0?' <span style="font-size:9px;color:var(--g400);font-weight:400;">('+((lR_s/lS_s)*100).toFixed(1)+'%)</span>':'';
+    stH+=`<tr><td class="nm">${s}</td><td class="r">${r.length}</td><td class="r">${eS_s}</td><td class="r" style="font-weight:700;${eR_s>0?'color:var(--brand);':''}">${eR_s}${eRpct}</td><td class="r">${lS_s}</td><td class="r" style="font-weight:700;">${lA_s}${lApct}</td><td class="r">${lM_s}</td><td class="r" style="font-weight:700;${lR_s>0?'color:var(--brand);':''}">${lR_s}${lRpct}</td><td class="r" style="font-weight:600;">${rr}</td></tr>`;
+  });
+  stH+='</tbody></table>';
+  document.getElementById('d_senderTable').innerHTML=stH;
 
   // Channel table
   const chG=G(D,'channel');
-  document.getElementById('d_chTb').innerHTML=['Hybrid','Email Only','LinkedIn Only'].filter(c=>chG[c]).map(c=>{const r=chG[c];return`<tr><td class="nm">${c}</td><td class="r">${r.length}</td><td class="r">${S(r,'Email Sent')}</td><td class="r">${S(r,'Email Delivered')}</td><td class="r">${S(r,'LI Connections Sent')}</td><td class="r">${S(r,'LI Connections Accepted')}</td><td class="r" style="font-weight:700;">${S(r,'Total Replies')}</td></tr>`}).join('');
+  document.getElementById('d_chTb').innerHTML=['Hybrid','Email Only','LinkedIn Only'].filter(c=>chG[c]).map(c=>{
+    const r=chG[c];const cES=S(r,'Email Sent');const cER=S(r,'Email Replies');const cLS=S(r,'LI Connections Sent');const cLA=S(r,'LI Connections Accepted');const cLR=S(r,'LI Replies');
+    const cERp=cES>0?' <span style="font-size:9px;color:var(--g400);">('+((cER/cES)*100).toFixed(1)+'%)</span>':'';
+    const cLAp=cLS>0?' <span style="font-size:9px;color:var(--g400);">('+((cLA/cLS)*100).toFixed(1)+'%)</span>':'';
+    const cLRp=cLS>0?' <span style="font-size:9px;color:var(--g400);">('+((cLR/cLS)*100).toFixed(1)+'%)</span>':'';
+    return`<tr><td class="nm">${c}</td><td class="r">${r.length}</td><td class="r">${cES}</td><td class="r">${cLS}</td><td class="r" style="font-weight:700;">${cLA}${cLAp}</td><td class="r" style="font-weight:700;">${cER}${cERp}</td><td class="r" style="font-weight:700;">${cLR}${cLRp}</td></tr>`}).join('');
 
-  // Send timing charts
+  // Send timing charts - hidden until enough data
+  /* UNCOMMENT WHEN READY:
   // Derive send day/time from last_outbound or campaign_started (UTC -> SAST +2h)
   const dayOrder=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const timeOrder=['6-9am','9am-12pm','12-3pm','3-6pm','6-9pm','Off-hours'];
@@ -735,15 +841,122 @@ function render(){
     }
   }));
 
+  END UNCOMMENT */
+
   // Company bars
   const coG=G(D,'Company Name');
-  const coA=Object.entries(coG).map(([n,r])=>({name:n,leads:r.length,email:S(r,'Email Sent'),li:S(r,'LI Connections Sent')})).sort((a,b)=>b.leads-a.leads).slice(0,15);
-  const mxL=coA[0]?.leads||1;
-  document.getElementById('d_coSub').textContent=`Top 15 of ${U(D,'Company Name')} companies`;
-  document.getElementById('d_coBars').innerHTML=coA.map((c,i)=>{const eW=(c.email/mxL)*100,lW=(c.li/mxL)*100,rest=Math.max(0,c.leads-c.email-c.li),rW=(rest/mxL)*100;return`<div class="co"><span class="co-r">${i+1}</span><span class="co-n" title="${c.name}">${c.name}</span><div class="co-bw">${c.email>0?`<div class="co-b" style="width:${eW}%;background:var(--brand);"></div>`:''}${c.li>0?`<div class="co-b" style="width:${lW}%;background:var(--g300);"></div>`:''}${rest>0?`<div class="co-b" style="width:${rW}%;background:var(--g100);"></div>`:''}</div><span class="co-c">${c.leads}</span></div>`}).join('');
+  const coA=Object.entries(coG).map(([n,r])=>({
+    name:n,leads:r.length,
+    email:S(r,'Email Sent'),
+    li:S(r,'LI Connections Sent'),
+    eReplies:S(r,'Email Replies'),lReplies:S(r,'LI Replies')
+  })).sort((a,b)=>b.leads-a.leads);
+  const totalCos=coA.length;
+  document.getElementById('d_coSub').textContent=`${totalCos} companies targeted`;
+  document.getElementById('d_coBody').innerHTML=coA.map(c=>`<tr>
+    <td class="nm">${c.name}</td>
+    <td class="r">${c.leads}</td>
+    <td class="r">${c.email||'-'}</td>
+    <td class="r">${c.li||'-'}</td>
+    <td class="r" style="font-weight:700;${c.eReplies>0?'color:var(--brand);':''}">${c.eReplies}</td>
+    <td class="r" style="font-weight:700;${c.lReplies>0?'color:var(--brand);':''}">${c.lReplies}</td>
+  </tr>`).join('');
 
   // === WEEKLY TRACKER ===
+  // Step progress
+  renderStepProgress();
+
   renderTracker(D);
+}
+
+function renderStepProgress(){
+  const emptyMsg='<tr><td colspan="7" style="text-align:center;color:var(--g400);padding:20px;">Run the updated Apps Script to generate Step Performance data</td></tr>';
+  if(!STEP_PERF.length){
+    document.getElementById('d_stepHead').innerHTML='';
+    document.getElementById('d_stepBody').innerHTML=emptyMsg;
+    document.getElementById('d_stepNote').textContent='';
+    return;
+  }
+
+  const isEmail=stepActiveTab==='email';
+  const accentColor=isEmail?'var(--brand)':'#3B82F6';
+
+  // Channel filter: email steps vs linkedin steps
+  const emailChannels=['Email'];
+  const liChannels=['LinkedIn Connection','LinkedIn Message'];
+  const channelFilter=isEmail?emailChannels:liChannels;
+
+  // Populate campaign filter
+  const sel=document.getElementById('stepCampFilter');
+  const campaigns=[...new Set(STEP_PERF.map(r=>r['Sequence']||'').filter(Boolean))].sort();
+  const curVal=sel.value;
+  sel.innerHTML='<option value="">All Campaigns</option>'+campaigns.map(c=>`<option value="${c}"${c===curVal?' selected':''}>${c}</option>`).join('');
+
+  // Filter by campaign and channel
+  let spD=STEP_PERF.filter(r=>channelFilter.includes(r['Step Channel']||''));
+  if(sel.value)spD=spD.filter(r=>(r['Sequence']||'')===sel.value);
+
+  // Aggregate by step order (collapse channel subtypes for linkedin)
+  const stepMap={};
+  spD.forEach(r=>{
+    const stepNum=N(r['Step Order']);
+    if(!stepMap[stepNum]){
+      stepMap[stepNum]={step:stepNum,leads:0,sent:0,delivered:0,bounced:0,replies:0,channel:r['Step Channel']||''};
+    }
+    const s=stepMap[stepNum];
+    s.leads+=N(r['Leads in Step']);
+    if(isEmail){
+      s.sent+=N(r['Email Sent']);
+      s.delivered+=N(r['Email Delivered']);
+      s.bounced+=N(r['Email Bounced']);
+      s.replies+=N(r['Email Replies']);
+    } else {
+      s.sent+=N(r['LI Connections Sent'])+N(r['LI Messages Sent']);
+      s.delivered+=N(r['Aimfox Accepted']);
+      s.bounced+=0;
+      s.replies+=N(r['Aimfox Replies']);
+    }
+  });
+
+  const steps=Object.values(stepMap).sort((a,b)=>a.step-b.step);
+
+  // Renumber as "Email 1", "Email 2" or "LinkedIn 1", "LinkedIn 2"
+  const prefix=isEmail?'Email':'LinkedIn';
+  const maxLeads=steps.length>0?Math.max(...steps.map(s=>s.leads)):1;
+
+  // Headers differ by channel
+  const headHtml=isEmail
+    ?'<tr><th>Step</th><th class="r">Leads</th><th class="r">Sent</th><th class="r">Delivered</th><th class="r">Bounced</th><th class="r">Replies</th><th class="r">Reply Rate</th></tr>'
+    :'<tr><th>Step</th><th class="r">Leads</th><th class="r">Requests Sent</th><th class="r">Accepted</th><th class="r">DMs / Messages</th><th class="r">Replies</th><th class="r">Reply Rate</th></tr>';
+  document.getElementById('d_stepHead').innerHTML=headHtml;
+
+  let html='';
+  steps.forEach((s,i)=>{
+    const label=`${prefix} ${i+1}`;
+    const rr=s.sent>0?(s.replies/s.sent*100).toFixed(1)+'%':'--';
+    const pct=maxLeads>0?Math.round(s.leads/maxLeads*100):0;
+    const barColor=s.sent>0?accentColor:(isEmail?'var(--brand-35)':'rgba(59,130,246,0.35)');
+    const firedLabel=s.sent>0?'':' style="color:var(--g300);"';
+    html+=`<tr${firedLabel}>
+      <td class="nm">${label}${s.sent===0?' <span style="font-size:9px;color:var(--g400);font-weight:400;">(scheduled)</span>':''}</td>
+      <td class="r"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><div style="width:60px;height:6px;background:var(--g100);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;"></div></div>${s.leads.toLocaleString()}</div></td>
+      <td class="r">${s.sent.toLocaleString()}</td>
+      <td class="r">${s.delivered.toLocaleString()}</td>
+      <td class="r">${isEmail?(s.bounced>0?'<span style="color:var(--brand);">'+s.bounced.toLocaleString()+'</span>':s.bounced.toLocaleString()):s.bounced.toLocaleString()}</td>
+      <td class="r" style="font-weight:700;${s.replies>0?'color:'+accentColor+';':''}">${s.replies.toLocaleString()}</td>
+      <td class="r" style="font-weight:600;">${rr}</td>
+    </tr>`;
+  });
+  document.getElementById('d_stepBody').innerHTML=html||`<tr><td colspan="7" style="text-align:center;color:var(--g400);">No ${prefix.toLowerCase()} steps in selected campaign</td></tr>`;
+
+  // Note
+  const stepsWithActivity=steps.filter(s=>s.sent>0).length;
+  const totalSteps=steps.length;
+  document.getElementById('d_stepNote').textContent=totalSteps>0?(
+    stepsWithActivity>0
+      ?`${stepsWithActivity} of ${totalSteps} ${prefix.toLowerCase()} steps executed. ${totalSteps>stepsWithActivity?'Remaining steps are queued and will fire on schedule.':'All steps complete.'}`
+      :`No ${prefix.toLowerCase()} steps have executed yet. All ${totalSteps} steps are queued.`
+  ):'';
 }
 
 function renderTracker(D){
@@ -777,10 +990,11 @@ function renderTracker(D){
     h+='</tr></thead>';return h;
   }
   function secRow(label,colspan){return `<tr class="section-row"><td colspan="${colspan||WK_COLS+2}">${label}</td></tr>`;}
-  function dataRow(metric,total,wk1Val){
+  function dataRow(metric,total,wk1Val,tip){
     const t=typeof total==='number'?total.toLocaleString():total;
     const w1=wk1Val!==undefined?(typeof wk1Val==='number'?wk1Val.toLocaleString():wk1Val):(typeof total==='number'?total.toLocaleString():total);
-    let r=`<tr><td>${metric}</td><td class="r">${t}</td><td class="r">${w1}</td>`;
+    const tipHtml=tip?` <span style="cursor:help;color:var(--g400);font-size:9px;" title="${tip}">&#9432;</span>`:'';
+    let r=`<tr><td>${metric}${tipHtml}</td><td class="r">${t}</td><td class="r">${w1}</td>`;
     for(let i=2;i<=WK_COLS;i++) r+='<td class="r" style="color:var(--g300);">--</td>';
     r+='</tr>';return r;
   }
@@ -796,31 +1010,35 @@ function renderTracker(D){
   overall+=dataRow('Total Leads Outreached',contacted);
   overall+=dataRow('Phone Nos. Enriched','--','--');
   overall+=secRow('EMAIL');
-  overall+=dataRow('UNIQUE LEADS EMAILED',emailLeads);
-  overall+=dataRow('TOTAL EMAILS SENT',eS);
-  overall+=dataRow('SENDS PER PROSPECT',eS>0&&emailLeads>0?(eS/emailLeads).toFixed(1):'--');
-  overall+=dataRow('MESSAGE SCHEDULED',scheduled);
-  overall+=dataRow('EMAILS DELIVERED',eD);
+  const emailScheduled=D.filter(r=>r['Conversation Stage']==='contact_scheduled'&&(r.channel==='Hybrid'||r.channel==='Email Only')).length;
+  const liScheduled=D.filter(r=>r['Conversation Stage']==='contact_scheduled'&&(r.channel==='Hybrid'||r.channel==='LinkedIn Only')).length;
+  const connScheduled=D.filter(r=>r['Conversation Stage']==='connection_scheduled').length;
+  overall+=dataRow('UNIQUE LEADS EMAILED',emailLeads,undefined,'Number of individual leads who received at least one email');
+  overall+=dataRow('TOTAL EMAILS SENT',eS,undefined,'Total email sends including follow-ups (same lead may receive multiple emails)');
+  overall+=dataRow('SENDS PER PROSPECT',eS>0&&emailLeads>0?(eS/emailLeads).toFixed(1):'--',undefined,'Average number of emails sent per lead');
+  overall+=dataRow('EMAILS SCHEDULED (PENDING)',emailScheduled,undefined,'Email-targeted leads whose emails have not been sent yet');
+  overall+=dataRow('EMAILS DELIVERED',eD,undefined,'Emails confirmed delivered to inbox by SendGrid');
   overall+=pctRow('Delivery Rate %',eD,eS);
+  overall+=dataRow('EMAILS BOUNCED',eB,undefined,'Emails that failed to deliver (invalid address, full mailbox, etc.)');
   overall+=pctRow('Bounce Rate %',eB,eS);
-  overall+=dataRow('TOTAL RESPONSE',eR);
-  overall+=dataRow('QUALIFIED RESPONSE',eR);
+  overall+=dataRow('TOTAL RESPONSE',eR,undefined,'Inbound email replies from leads (excludes auto-replies and out-of-office)');
+  overall+=dataRow('QUALIFIED RESPONSE',eR,undefined,'Replies that indicate genuine interest or engagement');
   overall+=pctRow('Reply Rate %',eR,eS);
-  overall+=dataRow('Version A Replies',S(vA,'Email Replies'));
-  overall+=dataRow('Version B Replies',S(vB,'Email Replies'));
+  overall+=dataRow('Version A Replies',S(vA,'Email Replies'),undefined,'Email replies from leads receiving message version A');
+  overall+=dataRow('Version B Replies',S(vB,'Email Replies'),undefined,'Email replies from leads receiving message version B');
   overall+=secRow('LINKEDIN');
-  overall+=dataRow('UNIQUE LEADS TARGETED',liLeads);
-  overall+=dataRow('CONN. ACTIONS SCHEDULED',S(D,'LI Connection Actions'));
-  overall+=dataRow('CONNECTION REQUESTS SENT',lS);
+  overall+=dataRow('UNIQUE LEADS TARGETED',liLeads,undefined,'Number of individual leads assigned to LinkedIn sequences');
+  overall+=dataRow('LINKEDIN SCHEDULED (PENDING)',liScheduled+connScheduled,undefined,'Leads whose LinkedIn connection requests are queued but not yet sent');
+  overall+=dataRow('CONNECTION REQUESTS SENT',lS,undefined,'LinkedIn connection requests actually sent to leads');
   // Opens/clicks removed - not reliable
-  overall+=dataRow('CONNECTIONS ACCEPTED',lA);
+  overall+=dataRow('CONNECTIONS ACCEPTED',lA,undefined,'Leads who accepted the LinkedIn connection request');
   overall+=pctRow('Acceptance Rate %',lA,lS);
-  overall+=dataRow('DMs SENT (POST-ACCEPT)',lMsgs);
-  overall+=dataRow('TOTAL RESPONSE',lR);
-  overall+=dataRow('QUALIFIED RESPONSE',lR);
+  overall+=dataRow('DMs SENT',lMsgs,undefined,'Direct messages sent to leads after they accepted the connection');
+  overall+=dataRow('TOTAL RESPONSE',lR,undefined,'Inbound LinkedIn replies from leads');
+  overall+=dataRow('QUALIFIED RESPONSE',lR,undefined,'LinkedIn replies that indicate genuine interest or engagement');
   overall+=pctRow('Reply Rate %',lR,lS);
-  overall+=dataRow('Version A Replies',S(vA,'LI Replies'));
-  overall+=dataRow('Version B Replies',S(vB,'LI Replies'));
+  overall+=dataRow('Version A Replies',S(vA,'LI Replies'),undefined,'LinkedIn replies from leads receiving message version A');
+  overall+=dataRow('Version B Replies',S(vB,'LI Replies'),undefined,'LinkedIn replies from leads receiving message version B');
   overall+='</tbody>';
   document.getElementById('wtOverall').innerHTML=overall;
 
@@ -831,7 +1049,7 @@ function renderTracker(D){
   const pLS=S(pharmaD,'LI Connections Sent'),pLA=S(pharmaD,'LI Connections Accepted'),pLM=S(pharmaD,'LI Messages Sent'),pLR=S(pharmaD,'LI Replies');
   // pharma LI metrics use clean field names
   const pContacted=pharmaD.filter(r=>r['Conversation Stage']==='contacted').length;
-  const pScheduled=pharmaD.filter(r=>r['Conversation Stage']==='contact_scheduled').length;
+  const pEmailScheduled=pharmaD.filter(r=>r['Conversation Stage']==='contact_scheduled'&&(r.channel==='Hybrid'||r.channel==='Email Only')).length;
   const pEmailLeads=pharmaD.filter(r=>N(r['Email Sent'])>0).length;
   const pLiLeads=pharmaD.filter(r=>N(r['LI Connections Sent'])>0).length;
   const pVA=pharmaD.filter(r=>r.version==='A'),pVB=pharmaD.filter(r=>r.version==='B');
@@ -846,9 +1064,10 @@ function renderTracker(D){
   s1+=dataRow('# Unique Leads Emailed',pEmailLeads);
   s1+=dataRow('# Total Emails Sent',pES);
   s1+=dataRow('Sends per Prospect',pEmailLeads>0?(pES/pEmailLeads).toFixed(1):'--');
-  s1+=dataRow('# Emails Scheduled',pScheduled);
+  s1+=dataRow('# Emails Scheduled (Pending)',pEmailScheduled);
   s1+=dataRow('# Emails Delivered',pED);
   s1+=pctRow('Delivery Rate %',pED,pES);
+  s1+=dataRow('# Emails Bounced',pEB);
   s1+=pctRow('Bounce Rate %',pEB,pES);
   s1+=pctRow('Reply Rate %',pER,pES);
   s1+=dataRow('Positive Replies',pER);
@@ -941,6 +1160,16 @@ async function init(){
     });
     // Exclude test leads (Team/internal lumif.ai leads)
     ALL=ALL.filter(r=>r.sender!=='Team');
+    // Fetch Step Performance sheet
+    try{
+      const spUrl=`https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(STEP_PERF_SHEET)}`;
+      const spResp=await fetch(spUrl);
+      if(spResp.ok){
+        STEP_PERF=parseCSV(await spResp.text());
+        const spNums=['Leads in Step','Leads with Activity','Leads with Reply','Email Sent','Email Delivered','Email Bounced','Email Replies','LI Connections Sent','LI Messages Sent','Aimfox Accepted','Aimfox Replies','Total Touches','Total Replies'];
+        STEP_PERF.forEach(r=>{spNums.forEach(f=>{if(r[f]!==undefined)r[f]=N(r[f])})});
+      }
+    }catch(e){console.log('Step Performance sheet not found, skipping',e)}
     try{const dates=ALL.map(r=>r['Campaign Started']).filter(Boolean).sort();if(dates[0]){const d=new Date(dates[0]);document.getElementById('campDate').textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});document.getElementById('weekBadge').textContent=`Week ${Math.max(1,Math.ceil((Date.now()-d.getTime())/(7*86400000)))}`}}catch(e){}
     document.getElementById('updDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
     popFilters();FLT=[...ALL];
