@@ -145,14 +145,7 @@ function transformForDashboard() {
         aimfox_accepted: 0,
         aimfox_reply: 0,
 
-        // Timestamps (new reliable sources)
-        first_email_sent_at: "",
-        first_email_response_at: "",
-        first_li_conn_sent_at: "",
-        first_li_dm_sent_at: "",
-        first_li_response_at: "",
-
-        // Timestamps (legacy / cross-channel)
+        // Timestamps
         first_email_delivered_at: "",
         first_email_reply_at: "",
         first_aimfox_reply_at: "",
@@ -285,11 +278,6 @@ function transformForDashboard() {
       has_reply: stepReplyTotal > 0 ? "Yes" : "No",
       conversation_stage: row[col["conversation_stage"]] || "",
       automation_status: row[col["automation_status"]] || "",
-      outbound_message: col["step_outbound_message"] !== undefined ? (row[col["step_outbound_message"]] || "") : "",
-      reply_message: col["step_reply_message"] !== undefined ? (row[col["step_reply_message"]] || "") : "",
-      email_sent_at: col["email_sent_sendgrid_at"] !== undefined ? (row[col["email_sent_sendgrid_at"]] || "") : "",
-      li_conn_sent_at: col["linkedin_connection_aimfox_sent_at"] !== undefined ? (row[col["linkedin_connection_aimfox_sent_at"]] || "") : "",
-      li_dm_sent_at: col["linkedin_dm_aimfox_at"] !== undefined ? (row[col["linkedin_dm_aimfox_at"]] || "") : "",
     });
 
     // Timestamps (take first non-empty)
@@ -314,38 +302,6 @@ function transformForDashboard() {
         lead.last_inbound_message_at = inbound;
       }
     }
-
-    // New reliable timestamps (earliest non-empty across steps)
-    if (col["email_sent_sendgrid_at"] !== undefined) {
-      const ts = row[col["email_sent_sendgrid_at"]];
-      if (ts && (!lead.first_email_sent_at || ts < lead.first_email_sent_at)) {
-        lead.first_email_sent_at = ts;
-      }
-    }
-    if (col["email_response_sendgrid_at"] !== undefined) {
-      const ts = row[col["email_response_sendgrid_at"]];
-      if (ts && (!lead.first_email_response_at || ts < lead.first_email_response_at)) {
-        lead.first_email_response_at = ts;
-      }
-    }
-    if (col["linkedin_connection_aimfox_sent_at"] !== undefined) {
-      const ts = row[col["linkedin_connection_aimfox_sent_at"]];
-      if (ts && (!lead.first_li_conn_sent_at || ts < lead.first_li_conn_sent_at)) {
-        lead.first_li_conn_sent_at = ts;
-      }
-    }
-    if (col["linkedin_dm_aimfox_at"] !== undefined) {
-      const ts = row[col["linkedin_dm_aimfox_at"]];
-      if (ts && (!lead.first_li_dm_sent_at || ts < lead.first_li_dm_sent_at)) {
-        lead.first_li_dm_sent_at = ts;
-      }
-    }
-    if (col["linkedin_response_aimfox_at"] !== undefined) {
-      const ts = row[col["linkedin_response_aimfox_at"]];
-      if (ts && (!lead.first_li_response_at || ts < lead.first_li_response_at)) {
-        lead.first_li_response_at = ts;
-      }
-    }
   });
 
   // ============================================================
@@ -354,13 +310,10 @@ function transformForDashboard() {
   const leadArray = Object.values(leads);
 
   leadArray.forEach(lead => {
-    // Prefer new reliable timestamps, fall back to legacy
-    var sendTimestamp = lead.first_email_sent_at
-      || lead.first_li_conn_sent_at
-      || lead.first_li_dm_sent_at
-      || lead.last_outbound_message_at
-      || lead.campaign_started_at
-      || "";
+    var sendTimestamp = lead.last_outbound_message_at || "";
+    if (!sendTimestamp) {
+      sendTimestamp = lead.campaign_started_at || "";
+    }
     if (sendTimestamp) {
       try {
         var dt = new Date(sendTimestamp);
@@ -436,9 +389,8 @@ function transformForDashboard() {
     "LI Connections Accepted", "LI Messages Sent", "LI Replies",
     "Total Touches", "Total Replies", "Has Replied",
     "Total Steps", "Steps with Activity", "Max Step", "Sequence Progress %",
-    "First Email Sent", "First Email Delivered", "First Email Response",
-    "First LI Connection Sent", "First LI DM Sent", "First LI Response",
-    "Last Outbound", "Last Inbound",
+    "First Email Delivered", "First Email Reply",
+    "First Aimfox Reply", "Last Outbound", "Last Inbound",
     "Current Step", "Current Step Channel", "Reply Step", "Reply Step Channel",
     "SendGrid Status", "Email Delivery Status"
   ];
@@ -457,9 +409,8 @@ function transformForDashboard() {
     l.aimfox_accepted, l.li_msg_sent, l.aimfox_reply,
     l.total_touches, l.total_replies, l.has_replied,
     l.total_steps, l.steps_with_activity, l.max_step_order, l.sequence_progress,
-    l.first_email_sent_at, l.first_email_delivered_at, l.first_email_response_at,
-    l.first_li_conn_sent_at, l.first_li_dm_sent_at, l.first_li_response_at,
-    l.last_outbound_message_at, l.last_inbound_message_at,
+    l.first_email_delivered_at, l.first_email_reply_at,
+    l.first_aimfox_reply_at, l.last_outbound_message_at, l.last_inbound_message_at,
     l.current_step >= 0 ? l.current_step : "",
     l.current_step_channel ? formatChannel(l.current_step_channel) : "",
     l.reply_step >= 0 ? l.reply_step : "",
@@ -661,9 +612,7 @@ function transformForDashboard() {
     "LI Connection Sent", "LI Message Sent",
     "Aimfox Conn Sent", "Aimfox Accepted", "Aimfox Reply",
     "Has Activity", "Has Reply",
-    "Conversation Stage", "Automation Status",
-    "Outbound Message", "Reply Message",
-    "Email Sent At", "LI Connection Sent At", "LI DM Sent At"
+    "Conversation Stage", "Automation Status"
   ];
 
   stepDetails.sort((a, b) => {
@@ -680,9 +629,7 @@ function transformForDashboard() {
     sd.li_conn_sent, sd.li_msg_sent,
     sd.aimfox_conn_sent, sd.aimfox_accepted, sd.aimfox_reply,
     sd.has_activity, sd.has_reply,
-    sd.conversation_stage, sd.automation_status,
-    sd.outbound_message, sd.reply_message,
-    sd.email_sent_at, sd.li_conn_sent_at, sd.li_dm_sent_at
+    sd.conversation_stage, sd.automation_status
   ]);
 
   writeSheet(ss, STEP_DETAIL_SHEET, stepDetailHeaders, stepDetailRows);
