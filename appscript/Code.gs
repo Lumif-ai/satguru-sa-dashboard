@@ -534,7 +534,8 @@ function transformForDashboard() {
     "Delivery Rate %", "Email Opens", "Email Clicks", "Open Rate %",
     "LI Connections Sent", "LI Accepted", "LI Acceptance Rate %",
     "LI Messages Sent", "LI Replies",
-    "Total Touches", "Total Replies", "Reply Rate %"
+    "Total Touches", "Total Replies", "Reply Rate (All Touches) %",
+    "Email Reply Rate %", "LI DM Reply Rate %", "Overall Reply Rate %"
   ];
 
   const seqRows = Object.values(seqMap).map(s => {
@@ -542,6 +543,10 @@ function transformForDashboard() {
     const openRate = s.email_delivered > 0 ? Math.round((s.email_opens / s.email_delivered) * 1000) / 10 : 0;
     const acceptRate = s.li_conn_sent > 0 ? Math.round((s.aimfox_accepted / s.li_conn_sent) * 1000) / 10 : 0;
     const replyRate = s.total_touches > 0 ? Math.round((s.total_replies / s.total_touches) * 1000) / 10 : 0;
+    const emailReplyRate = s.email_delivered > 0 ? Math.round((s.email_reply / s.email_delivered) * 1000) / 10 : 0;
+    const liDmReplyRate = s.li_msg_sent > 0 ? Math.round((s.aimfox_reply / s.li_msg_sent) * 1000) / 10 : 0;
+    const overallDenom = s.email_delivered + s.li_msg_sent;
+    const overallReplyRate = overallDenom > 0 ? Math.round((s.total_replies / overallDenom) * 1000) / 10 : 0;
 
     return [
       s.sequence_name, s.sender, s.channel_strategy, s.messaging_version,
@@ -551,7 +556,8 @@ function transformForDashboard() {
       delivRate, s.email_opens, s.email_clicks, openRate,
       s.li_conn_sent, s.aimfox_accepted, acceptRate,
       s.li_msg_sent, s.aimfox_reply,
-      s.total_touches, s.total_replies, replyRate
+      s.total_touches, s.total_replies, replyRate,
+      emailReplyRate, liDmReplyRate, overallReplyRate
     ];
   });
 
@@ -624,13 +630,18 @@ function transformForDashboard() {
     "Delivery Rate %",
     "LI Connections Sent", "LI Accepted", "LI Acceptance Rate %",
     "LI Messages Sent", "LI Replies",
-    "Total Touches", "Total Replies", "Reply Rate %"
+    "Total Touches", "Total Replies", "Reply Rate (All Touches) %",
+    "Email Reply Rate %", "LI DM Reply Rate %", "Overall Reply Rate %"
   ];
 
   const campRows = Object.values(campMap).map(c => {
     const delivRate = c.email_sent > 0 ? Math.round((c.email_delivered / c.email_sent) * 1000) / 10 : 0;
     const acceptRate = c.li_conn_sent > 0 ? Math.round((c.aimfox_accepted / c.li_conn_sent) * 1000) / 10 : 0;
     const replyRate = c.total_touches > 0 ? Math.round((c.total_replies / c.total_touches) * 1000) / 10 : 0;
+    const emailReplyRate = c.email_delivered > 0 ? Math.round((c.email_reply / c.email_delivered) * 1000) / 10 : 0;
+    const liDmReplyRate = c.li_msg_sent > 0 ? Math.round((c.aimfox_reply / c.li_msg_sent) * 1000) / 10 : 0;
+    const overallDenom = c.email_delivered + c.li_msg_sent;
+    const overallReplyRate = overallDenom > 0 ? Math.round((c.total_replies / overallDenom) * 1000) / 10 : 0;
 
     return [
       c.campaign_name, c.campaign_status, c.campaign_started_at,
@@ -642,7 +653,8 @@ function transformForDashboard() {
       delivRate,
       c.li_conn_sent, c.aimfox_accepted, acceptRate,
       c.li_msg_sent, c.aimfox_reply,
-      c.total_touches, c.total_replies, replyRate
+      c.total_touches, c.total_replies, replyRate,
+      emailReplyRate, liDmReplyRate, overallReplyRate
     ];
   });
 
@@ -734,16 +746,22 @@ function transformForDashboard() {
     "Email Reply Rate %",
     "LI Connections Sent", "LI Messages Sent",
     "Aimfox Accepted", "Aimfox Replies",
-    "Total Touches", "Total Replies", "Step Reply Rate %"
+    "LI DM Reply Rate %",
+    "Total Touches", "Total Replies", "Step Reply Rate %", "Overall Reply Rate %"
   ];
 
   const stepPerfRows = Object.values(stepPerfMap).map(sp => {
     const emailReplyRate = sp.email_delivered > 0
       ? Math.round((sp.email_reply / sp.email_delivered) * 1000) / 10 : 0;
+    const liDmReplyRate = sp.li_msg_sent > 0
+      ? Math.round((sp.aimfox_reply / sp.li_msg_sent) * 1000) / 10 : 0;
     const totalTouches = sp.email_sent + sp.li_conn_sent + sp.li_msg_sent;
     const totalReplies = sp.email_reply + sp.aimfox_reply;
     const stepReplyRate = totalTouches > 0
       ? Math.round((totalReplies / totalTouches) * 1000) / 10 : 0;
+    const overallDenom = sp.email_delivered + sp.li_msg_sent;
+    const overallReplyRate = overallDenom > 0
+      ? Math.round((totalReplies / overallDenom) * 1000) / 10 : 0;
 
     return [
       sp.sequence_name, sp.step_order, formatChannel(sp.step_channel),
@@ -752,7 +770,8 @@ function transformForDashboard() {
       emailReplyRate,
       sp.li_conn_sent, sp.li_msg_sent,
       sp.aimfox_accepted, sp.aimfox_reply,
-      totalTouches, totalReplies, stepReplyRate
+      liDmReplyRate,
+      totalTouches, totalReplies, stepReplyRate, overallReplyRate
     ];
   });
 
