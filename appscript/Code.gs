@@ -167,6 +167,9 @@ function transformForDashboard() {
         current_step_channel: "",
         reply_step: -1,
         reply_step_channel: "",
+
+        // Enrichment (OR-aggregated across steps)
+        phone_enriched: false,
       };
     }
 
@@ -229,6 +232,14 @@ function transformForDashboard() {
     // Aimfox reply
     if (col["aimfox_reply_count"] !== undefined) {
       lead.aimfox_reply += num(row, col["aimfox_reply_count"]);
+    }
+
+    // Phone enrichment (per-step boolean — lead is enriched if ANY step is true)
+    if (col["is_phone_enriched"] !== undefined) {
+      const pv = row[col["is_phone_enriched"]];
+      if (pv === true || pv === "TRUE" || pv === "true" || pv === 1 || pv === "1") {
+        lead.phone_enriched = true;
+      }
     }
 
     // Activity check
@@ -440,7 +451,8 @@ function transformForDashboard() {
     "First LI Connection Sent", "First LI DM Sent", "First LI Response",
     "Last Outbound", "Last Inbound",
     "Current Step", "Current Step Channel", "Reply Step", "Reply Step Channel",
-    "SendGrid Status", "Email Delivery Status"
+    "SendGrid Status", "Email Delivery Status",
+    "Phone Enriched"
   ];
 
   const leadRows = leadArray.map(l => [
@@ -465,7 +477,8 @@ function transformForDashboard() {
     l.reply_step >= 0 ? l.reply_step : "",
     l.reply_step_channel ? formatChannel(l.reply_step_channel) : "",
     l.sg_status || "",
-    l.email_delivery_status
+    l.email_delivery_status,
+    l.phone_enriched ? "Yes" : "No"
   ]);
 
   writeSheet(ss, LEAD_SHEET, leadHeaders, leadRows);
