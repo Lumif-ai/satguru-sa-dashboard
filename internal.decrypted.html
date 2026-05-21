@@ -2110,31 +2110,25 @@ function renderResponseTracker(){
   const rSend=document.getElementById('rtSender').value;
   const rChan=document.getElementById('rtChannel').value;
   const rType=document.getElementById('rtType').value;
-  const rAct=document.getElementById('rtAction').value;
   if(rCamp)d=d.filter(r=>r['Campaign']===rCamp);
-  if(rSend)d=d.filter(r=>r['Sender Name']===rSend);
-  if(rChan)d=d.filter(r=>r['Engagement Channel']===rChan||r['Engagement\nChannel']===rChan);
-  if(rType)d=d.filter(r=>(r['Response Received Type']||'').trim()===rType);
-  if(rAct)d=d.filter(r=>(r['Action Taken']||'').trim()===rAct);
+  if(rSend)d=d.filter(r=>r['Sender']===rSend);
+  if(rChan)d=d.filter(r=>r['Channel']===rChan);
+  if(rType)d=d.filter(r=>(r['Response Type']||'').trim()===rType);
   RESP_FLT=d;
 
   populateRtFilter('rtCampaign','Campaign',RESP_ALL,'All Campaigns');
-  populateRtFilter('rtSender','Sender Name',RESP_ALL,'All Senders');
-  const chanField=RESP_ALL.length&&RESP_ALL[0]['Engagement\nChannel']!==undefined?'Engagement\nChannel':'Engagement Channel';
-  populateRtFilter('rtChannel',chanField,RESP_ALL,'All Channels');
-  const allTypes=[...new Set(RESP_ALL.map(r=>(r['Response Received Type']||'').trim()).filter(Boolean))].sort();
+  populateRtFilter('rtSender','Sender',RESP_ALL,'All Senders');
+  populateRtFilter('rtChannel','Channel',RESP_ALL,'All Channels');
+  const allTypes=[...new Set(RESP_ALL.map(r=>(r['Response Type']||'').trim()).filter(Boolean))].sort();
   const typeSel=document.getElementById('rtType');const curT=typeSel.value;
   typeSel.innerHTML='<option value="">All Response Types</option>'+allTypes.map(v=>`<option value="${v}"${v===curT?' selected':''}>${v}</option>`).join('');
-  const allActs=[...new Set(RESP_ALL.map(r=>(r['Action Taken']||'').trim()).filter(Boolean))].sort();
-  const actSel=document.getElementById('rtAction');const curA=actSel.value;
-  actSel.innerHTML='<option value="">All Action States</option>'+allActs.map(v=>`<option value="${v}"${v===curA?' selected':''}>${v}</option>`).join('');
 
-  const ac=[rCamp,rSend,rChan,rType,rAct].filter(Boolean).length;
+  const ac=[rCamp,rSend,rChan,rType].filter(Boolean).length;
   document.getElementById('rtCount').textContent=ac>0?`${d.length} of ${RESP_ALL.length} responses`:`${RESP_ALL.length} responses`;
   document.getElementById('rtReset').style.display=ac>0?'':'none';
 
   // Scorecards
-  const cnt=(fn)=>d.filter(r=>fn((r['Response Received Type']||'').toLowerCase())).length;
+  const cnt=(fn)=>d.filter(r=>fn((r['Response Type']||'').toLowerCase())).length;
   document.getElementById('rt_interested').textContent=cnt(t=>t.includes('interested')&&!t.includes('not'));
   document.getElementById('rt_nurture').textContent=cnt(t=>t.includes('soft')||t.includes('nurtur'));
   document.getElementById('rt_inhouse').textContent=cnt(t=>t.includes('in-house')||t.includes('in house'));
@@ -2154,26 +2148,26 @@ function renderResponseTracker(){
   }
   tableWrap.style.display='';
   empty.style.display='none';
-  const chanF=RESP_ALL.length&&RESP_ALL[0]['Engagement\nChannel']!==undefined?'Engagement\nChannel':'Engagement Channel';
   tbody.innerHTML=d.map(r=>{
-    const typ=(r['Response Received Type']||'').trim();
-    const act=(r['Action Taken']||'').trim();
-    const isActed=act.toLowerCase().includes('action taken')&&!act.toLowerCase().includes('no action');
-    const days=r['Days Since Response']!==undefined?r['Days Since Response']:'--';
+    const typ=(r['Response Type']||'').trim();
+    const emailId=r['Email ID']||'';
+    const liUrl=r['LinkedIn URL']||'';
     return `<tr>
       <td class="nm">${r['Name']||'--'}</td>
       <td>${r['Role']||'--'}</td>
       <td>${r['Company']||'--'}</td>
+      <td>${emailId?'<a href="mailto:'+emailId+'" style="color:var(--brand);text-decoration:none;">'+emailId+'</a>':'--'}</td>
+      <td>${liUrl?'<a href="'+liUrl+'" target="_blank" style="color:#2563EB;text-decoration:none;">View ↗</a>':'--'}</td>
       <td>${r['Campaign']||'--'}</td>
-      <td>${r[chanF]||'--'}</td>
-      <td>${r['Sender Name']||'--'}</td>
+      <td>${r['Channel']||'--'}</td>
+      <td>${r['Sender']||'--'}</td>
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
-      <td>${act?'<span class="rt-action-pill '+(isActed?'done':'pending')+'">'+act+'</span>':'--'}</td>
-      <td style="font-size:10px;color:var(--g500);">${r['Next Step Recommended']||'--'}</td>
-      <td class="r">${r['# of messages sent before first response']||'--'}</td>
-      <td class="r" style="white-space:nowrap;">${r['Response Receive Date']||'--'}</td>
-      <td class="r" style="white-space:nowrap;">${r['Last Message Date']||'--'}</td>
-      <td class="r">${days!=='--'?days+'d':'--'}</td>
+      <td style="font-size:10px;color:var(--g500);">${r['Next Step']||'--'}</td>
+      <td class="r">${r['Msgs Before Reply']||'--'}</td>
+      <td class="r" style="white-space:nowrap;">${r['Response Date']||'--'}</td>
+      <td class="r">--</td>
+      <td class="r">--</td>
+      <td class="r">--</td>
     </tr>`;
   }).join('');
 }
