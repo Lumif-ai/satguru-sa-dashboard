@@ -202,18 +202,15 @@
   /* Response Tracker */
   .rt-sboard { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:16px; }
   .rt-sboard .sc { border-top:3px solid var(--g200); }
-  .rt-sboard .sc.c-green { border-top-color:#10B981; }
-  .rt-sboard .sc.c-yellow { border-top-color:#F59E0B; }
+  .rt-sboard .sc.c-brand { border-top-color:var(--brand); }
   .rt-sboard .sc.c-blue { border-top-color:#3B82F6; }
   .rt-sboard .sc.c-purple { border-top-color:#8B5CF6; }
-  .rt-sboard .sc.c-slate { border-top-color:#64748B; }
-  .rt-sboard .sc.c-red { border-top-color:#EF4444; }
-  .rt-sboard .sc.c-green .sc-v { color:#059669; }
-  .rt-sboard .sc.c-yellow .sc-v { color:#D97706; }
+  .rt-sboard .sc.c-green { border-top-color:#10B981; }
+  .rt-sboard .sc.c-brand .sc-v { color:var(--brand); }
   .rt-sboard .sc.c-blue .sc-v { color:#2563EB; }
   .rt-sboard .sc.c-purple .sc-v { color:#7C3AED; }
-  .rt-sboard .sc.c-slate .sc-v { color:#475569; }
-  .rt-sboard .sc.c-red .sc-v { color:#DC2626; }
+  .rt-sboard .sc.c-green .sc-v { color:#059669; }
+  .rt-reply-msg { font-size:11px; color:var(--g600); line-height:1.5; max-width:280px; white-space:normal; }
   .b-green { background:rgba(16,185,129,0.1); color:#059669; }
   .b-yellow { background:rgba(245,158,11,0.1); color:#D97706; }
   .b-blue-li { background:rgba(59,130,246,0.1); color:#2563EB; }
@@ -561,12 +558,12 @@
       <button class="freset" id="rtReset" style="display:none;">Reset</button>
     </div>
     <div class="rt-sboard" id="rtScoreboard">
-      <div class="sc c-green"><div class="sc-v" id="rt_interested">--</div><div class="sc-l">Interested</div></div>
-      <div class="sc c-yellow"><div class="sc-v" id="rt_nurture">--</div><div class="sc-l">Soft Maybe</div></div>
-      <div class="sc c-blue"><div class="sc-v" id="rt_inhouse">--</div><div class="sc-l">In-House Team</div></div>
-      <div class="sc c-purple"><div class="sc-v" id="rt_redirect">--</div><div class="sc-l">Low Relevance</div></div>
-      <div class="sc c-slate"><div class="sc-v" id="rt_ooo">--</div><div class="sc-l">Out of Office</div></div>
-      <div class="sc c-red"><div class="sc-v" id="rt_notinterested">--</div><div class="sc-l">Not Interested</div></div>
+      <div class="sc c-brand"><div class="sc-v" id="rt_total">--</div><div class="sc-l">Total Responses</div></div>
+      <div class="sc c-brand"><div class="sc-v" id="rt_email">--</div><div class="sc-l">Email Responses</div></div>
+      <div class="sc c-blue"><div class="sc-v" id="rt_li">--</div><div class="sc-l">LinkedIn Responses</div></div>
+      <div class="sc c-purple"><div class="sc-v" id="rt_dmrate">--</div><div class="sc-l">DM Reply Rate</div></div>
+      <div class="sc c-brand"><div class="sc-v" id="rt_emailrate">--</div><div class="sc-l">Email Reply Rate</div></div>
+      <div class="sc c-green"><div class="sc-v" id="rt_warm">--</div><div class="sc-l">Warm Pipeline</div></div>
     </div>
     <div class="card mb16">
       <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
@@ -585,6 +582,7 @@
               <th>Email ID</th>
               <th>LinkedIn URL</th>
               <th>Campaign</th>
+              <th>Response Received</th>
               <th>Channel</th>
               <th>Sender</th>
               <th>Response Type</th>
@@ -2128,13 +2126,21 @@ function renderResponseTracker(){
   document.getElementById('rtReset').style.display=ac>0?'':'none';
 
   // Scorecards
-  const cnt=(fn)=>d.filter(r=>fn((r['Response Type']||'').toLowerCase())).length;
-  document.getElementById('rt_interested').textContent=cnt(t=>t.includes('interested')&&!t.includes('not'));
-  document.getElementById('rt_nurture').textContent=cnt(t=>t.includes('soft')||t.includes('nurtur'));
-  document.getElementById('rt_inhouse').textContent=cnt(t=>t.includes('in-house')||t.includes('in house'));
-  document.getElementById('rt_redirect').textContent=cnt(t=>t.includes('redirect')||t.includes('low relevance'));
-  document.getElementById('rt_ooo').textContent=cnt(t=>t.includes('out of office'));
-  document.getElementById('rt_notinterested').textContent=cnt(t=>t.includes('not interested'));
+  const emailResp=d.filter(r=>r['Channel']==='Email').length;
+  const liResp=d.filter(r=>r['Channel']==='LinkedIn').length;
+  const warmCount=d.filter(r=>{const t=(r['Response Type']||'').toLowerCase();return(t.includes('interested')&&!t.includes('not'))||t.includes('soft')||t.includes('nurtur');}).length;
+  const totalLiDms=S(ALL,'LI Messages Sent');
+  const totalLiReplies=S(ALL,'LI Replies');
+  const totalEmailDel=S(ALL,'Email Delivered');
+  const totalEmailReplies=S(ALL,'Email Replies');
+  const dmRate=totalLiDms>0?((totalLiReplies/totalLiDms)*100).toFixed(1)+'%':'--';
+  const emailRate=totalEmailDel>0?((totalEmailReplies/totalEmailDel)*100).toFixed(1)+'%':'--';
+  document.getElementById('rt_total').textContent=d.length;
+  document.getElementById('rt_email').textContent=emailResp;
+  document.getElementById('rt_li').textContent=liResp;
+  document.getElementById('rt_dmrate').textContent=dmRate;
+  document.getElementById('rt_emailrate').textContent=emailRate;
+  document.getElementById('rt_warm').textContent=warmCount;
 
   // Table
   const tbody=document.getElementById('rtTbody');
@@ -2159,6 +2165,7 @@ function renderResponseTracker(){
       <td>${emailId?'<a href="mailto:'+emailId+'" style="color:var(--brand);text-decoration:none;">'+emailId+'</a>':'--'}</td>
       <td>${liUrl?'<a href="'+liUrl+'" target="_blank" style="color:#2563EB;text-decoration:none;">View ↗</a>':'--'}</td>
       <td>${r['Campaign']||'--'}</td>
+      <td><div class="rt-reply-msg">${r['_replyMsg']?(r['_replyMsg'].length>150?r['_replyMsg'].substring(0,150)+'…':r['_replyMsg']):'--'}</div></td>
       <td>${r['Channel']||'--'}</td>
       <td>${r['Sender']||'--'}</td>
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
