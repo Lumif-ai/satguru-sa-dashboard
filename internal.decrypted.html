@@ -2031,12 +2031,19 @@ async function init(){
     // Build Response Tracker from STEP_DETAIL (has all replied leads) joined with ALL for sender/date
     {
       const allMap={};ALL.forEach(r=>{allMap[r['Conversation ID']]=r;});
+      // Index all steps per conversation for Msgs Before Reply calculation
+      const stepsByConv={};
+      STEP_DETAIL.forEach(sd=>{
+        const cid=sd['Conversation ID']||'';
+        if(!stepsByConv[cid])stepsByConv[cid]=[];
+        stepsByConv[cid].push(sd);
+      });
       const rows=[];const seen=new Set();
       STEP_DETAIL.forEach(sd=>{
         const replyMsg=sd['Reply Message']||'';
         if(!replyMsg)return;
         const cid=sd['Conversation ID']||'';
-        const stepOrder=sd['Step Order']||'';
+        const stepOrder=Number(sd['Step Order'])||0;
         const key=cid+'|'+stepOrder+'|'+replyMsg.slice(0,40);
         if(seen.has(key))return;
         seen.add(key);
@@ -2045,6 +2052,12 @@ async function init(){
         const normCh=ch.includes('linkedin')?'LinkedIn':'Email';
         const replyDate=lead['Last Inbound']||lead['First Email Response']||lead['First LI Response']||'';
         const fmtDate=replyDate?new Date(replyDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+        // Count only steps where an actual message was sent (email or LI message), not connection requests
+        const msgCount=(stepsByConv[cid]||[]).filter(s=>{
+          const so=Number(s['Step Order'])||0;
+          const hasMsg=N(s['Email Sent'])>0||N(s['LI Message Sent'])>0||N(s['Aimfox Reply'])>0;
+          return hasMsg&&so<=stepOrder;
+        }).length;
         rows.push({
           'Name':sd['Person Name']||'',
           'Role':lead['Person Title']||'',
@@ -2056,7 +2069,7 @@ async function init(){
           'Sender':lead['Sender']||'',
           'Response Type':autoDetectRespType(replyMsg),
           'Next Step':'',
-          'Msgs Before Reply':String(stepOrder),
+          'Msgs Before Reply':msgCount>0?String(msgCount):'',
           'Response Date':fmtDate,
           '_replyMsg':replyMsg,
           '_sortDate':replyDate
