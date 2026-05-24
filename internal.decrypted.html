@@ -218,6 +218,10 @@
   .b-slate { background:rgba(100,116,139,0.1); color:#475569; }
   .b-red { background:rgba(239,68,68,0.1); color:#DC2626; }
   .rt-empty { text-align:center; color:var(--g400); padding:40px 20px; font-size:12px; }
+  .rt-next-step { min-width:110px; min-height:18px; font-size:10px; color:var(--g600); line-height:1.4; outline:none; border-radius:4px; padding:2px 4px; cursor:text; white-space:pre-wrap; word-break:break-word; }
+  .rt-next-step:hover { background:var(--g100); }
+  .rt-next-step:focus { background:var(--g100); box-shadow:0 0 0 2px rgba(233,77,53,0.2); }
+  .rt-next-step:empty::before { content:attr(data-placeholder); color:var(--g300); font-style:italic; pointer-events:none; }
   .rt-action-pill { display:inline-block; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; }
   .rt-action-pill.done { background:rgba(16,185,129,0.1); color:#059669; }
   .rt-action-pill.pending { background:rgba(245,158,11,0.1); color:#D97706; }
@@ -2055,6 +2059,7 @@ async function init(){
           const hasMsg=N(s['Email Sent'])>0||N(s['LI Message Sent'])>0||N(s['Aimfox Reply'])>0;
           return hasMsg&&so<=stepOrder;
         }).length;
+        const rowKey=cid+'|'+stepOrder;
         rows.push({
           'Name':sd['Person Name']||'',
           'Role':lead['Person Title']||'',
@@ -2065,11 +2070,12 @@ async function init(){
           'Channel':normCh,
           'Sender':lead['Sender']||'',
           'Response Type':autoDetectRespType(replyMsg),
-          'Next Step':'',
+          'Next Step':localStorage.getItem('rt_ns_'+rowKey)||'',
           'Msgs Before Reply':msgCount>0?String(msgCount):'',
           'Response Date':fmtDate,
           '_replyMsg':replyMsg,
-          '_sortDate':replyDate
+          '_sortDate':replyDate,
+          '_key':rowKey
         });
       });
       rows.sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
@@ -2207,10 +2213,17 @@ function renderResponseTracker(){
       <td><div class="rt-reply-msg">${r['_replyMsg']?(r['_replyMsg'].length>150?r['_replyMsg'].substring(0,150)+'…':r['_replyMsg']):'--'}</div></td>
       <td>${r['Sender']||'--'}</td>
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
-      <td style="font-size:10px;color:var(--g500);">${r['Next Step']||'--'}</td>
+      <td><div class="rt-next-step" contenteditable="true" data-key="${r['_key']}" data-placeholder="Add note…" onblur="saveRtNextStep(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur();}">${r['Next Step']?r['Next Step'].replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}</div></td>
       <td class="r">${r['Msgs Before Reply']||'--'}</td>
     </tr>`;
   }).join('');
+}
+function saveRtNextStep(el){
+  const key=el.dataset.key;
+  const val=el.innerText.trim();
+  if(val){localStorage.setItem('rt_ns_'+key,val);}else{localStorage.removeItem('rt_ns_'+key);}
+  const row=RESP_ALL.find(r=>r['_key']===key);
+  if(row)row['Next Step']=val;
 }
 ['rtCampaign','rtSender','rtChannel','rtType'].forEach(id=>{
   document.getElementById(id).addEventListener('change',renderResponseTracker);
