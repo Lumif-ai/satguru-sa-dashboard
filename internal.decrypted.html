@@ -2028,20 +2028,23 @@ async function init(){
       const cdResp=await fetch(cdUrl);
       if(cdResp.ok){
         CONV_DUMP=parseCSV(await cdResp.text());
-        // Group by conversation_id, keep the step row where the reply was received
-        const convMap={};
+        // Collect every step row that has a reply — no dedup by conversation so all replies show
+        const rows=[];
+        const seen=new Set();
         CONV_DUMP.forEach(r=>{
-          const cid=r['conversation_id'];
           const hasEmailReply=N(r['email_reply_count'])>0;
           const hasLiReply=N(r['linkedin_msg_replied_count'])>0||N(r['aimfox_reply_count'])>0;
           if(hasEmailReply||hasLiReply){
-            // Only overwrite if not yet set, so we keep the first (lowest step) reply row
-            if(!convMap[cid]){
-              const ch=(r['step_channel']||'').toLowerCase();
-              const normCh=ch.includes('linkedin')?'LinkedIn':'Email';
-              const replyDate=r['first_email_reply_at']||r['first_aimfox_reply_at']||r['first_aimfox_message_received_at']||'';
-              const fmtDate=replyDate?new Date(replyDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
-              convMap[cid]={
+            const ch=(r['step_channel']||'').toLowerCase();
+            const normCh=ch.includes('linkedin')?'LinkedIn':'Email';
+            const replyDate=r['first_email_reply_at']||r['first_aimfox_reply_at']||r['first_aimfox_message_received_at']||'';
+            const fmtDate=replyDate?new Date(replyDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+            const replyMsg=r['step_reply_message']||'';
+            // Deduplicate on conversation_id + step_order to avoid duplicate sheet rows
+            const key=(r['conversation_id']||'')+'|'+(r['step_order']||'')+'|'+replyMsg.slice(0,40);
+            if(!seen.has(key)){
+              seen.add(key);
+              rows.push({
                 'Name':r['person_name']||'',
                 'Role':r['person_title']||'',
                 'Company':r['company_name']||'',
@@ -2050,16 +2053,19 @@ async function init(){
                 'Campaign':r['campaign_name']||'',
                 'Channel':normCh,
                 'Sender':r['sender_name']||'',
-                'Response Type':autoDetectRespType(r['step_reply_message']||''),
+                'Response Type':autoDetectRespType(replyMsg),
                 'Next Step':'',
                 'Msgs Before Reply':r['step_order']||'',
                 'Response Date':fmtDate,
-                '_replyMsg':r['step_reply_message']||''
-              };
+                '_replyMsg':replyMsg,
+                '_sortDate':replyDate
+              });
             }
           }
         });
-        RESP_ALL=Object.values(convMap);
+        // Sort newest reply first
+        rows.sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
+        RESP_ALL=rows;
       }
     }catch(e){console.log('conversation_dump_latest sheet not found, skipping',e)}
     RESP_FLT=[...RESP_ALL];
@@ -2112,6 +2118,8 @@ function renderResponseTracker(){
   if(rSend)d=d.filter(r=>r['Sender']===rSend);
   if(rChan)d=d.filter(r=>r['Channel']===rChan);
   if(rType)d=d.filter(r=>(r['Response Type']||'').trim()===rType);
+  // Always show newest reply first
+  d=d.slice().sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
   RESP_FLT=d;
 
   populateRtFilter('rtCampaign','Campaign',RESP_ALL,'All Campaigns');
