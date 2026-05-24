@@ -593,6 +593,8 @@
               <th>Response Type</th>
               <th>Next Step</th>
               <th class="r">Msgs Before Reply</th>
+              <th>Action Taken</th>
+              <th class="r">Days Since</th>
             </tr>
           </thead>
           <tbody id="rtTbody"></tbody>
@@ -2071,6 +2073,7 @@ async function init(){
           'Sender':lead['Sender']||'',
           'Response Type':autoDetectRespType(replyMsg),
           'Next Step':localStorage.getItem('rt_ns_'+rowKey)||'',
+
           'Msgs Before Reply':msgCount>0?String(msgCount):'',
           'Response Date':fmtDate,
           '_replyMsg':replyMsg,
@@ -2215,6 +2218,8 @@ function renderResponseTracker(){
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
       <td><div class="rt-next-step" contenteditable="true" data-key="${r['_key']}" data-placeholder="Add note…" onblur="saveRtNextStep(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur();}">${r['Next Step']?r['Next Step'].replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}</div></td>
       <td class="r">${r['Msgs Before Reply']||'--'}</td>
+      <td></td>
+      <td class="r"></td>
     </tr>`;
   }).join('');
 }
