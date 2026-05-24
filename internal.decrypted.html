@@ -2022,52 +2022,49 @@ async function init(){
       }
     }catch(e){console.log('Step Detail sheet not found, skipping',e)}
 
-    // Fetch conversation_dump_latest for Response Tracker
+    // Fetch conversation_dump_latest (kept for legacy/CONV_DUMP variable, not used for Response Tracker)
     try{
       const cdUrl=`https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CONV_DUMP_SHEET)}`;
       const cdResp=await fetch(cdUrl);
-      if(cdResp.ok){
-        CONV_DUMP=parseCSV(await cdResp.text());
-        // Collect every step row that has a reply — no dedup by conversation so all replies show
-        const rows=[];
-        const seen=new Set();
-        CONV_DUMP.forEach(r=>{
-          const hasEmailReply=N(r['email_reply_count'])>0;
-          const hasLiReply=N(r['linkedin_msg_replied_count'])>0||N(r['aimfox_reply_count'])>0;
-          if(hasEmailReply||hasLiReply){
-            const ch=(r['step_channel']||'').toLowerCase();
-            const normCh=ch.includes('linkedin')?'LinkedIn':'Email';
-            const replyDate=r['first_email_reply_at']||r['first_aimfox_reply_at']||r['first_aimfox_message_received_at']||'';
-            const fmtDate=replyDate?new Date(replyDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
-            const replyMsg=r['step_reply_message']||'';
-            // Deduplicate on conversation_id + step_order to avoid duplicate sheet rows
-            const key=(r['conversation_id']||'')+'|'+(r['step_order']||'')+'|'+replyMsg.slice(0,40);
-            if(!seen.has(key)){
-              seen.add(key);
-              rows.push({
-                'Name':r['person_name']||'',
-                'Role':r['person_title']||'',
-                'Company':r['company_name']||'',
-                'Email ID':r['person_email']||'',
-                'LinkedIn URL':'',
-                'Campaign':r['campaign_name']||'',
-                'Channel':normCh,
-                'Sender':r['sender_name']||'',
-                'Response Type':autoDetectRespType(replyMsg),
-                'Next Step':'',
-                'Msgs Before Reply':r['step_order']||'',
-                'Response Date':fmtDate,
-                '_replyMsg':replyMsg,
-                '_sortDate':replyDate
-              });
-            }
-          }
-        });
-        // Sort newest reply first
-        rows.sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
-        RESP_ALL=rows;
-      }
+      if(cdResp.ok){CONV_DUMP=parseCSV(await cdResp.text());}
     }catch(e){console.log('conversation_dump_latest sheet not found, skipping',e)}
+    // Build Response Tracker from STEP_DETAIL (has all replied leads) joined with ALL for sender/date
+    {
+      const allMap={};ALL.forEach(r=>{allMap[r['Conversation ID']]=r;});
+      const rows=[];const seen=new Set();
+      STEP_DETAIL.forEach(sd=>{
+        const replyMsg=sd['Reply Message']||'';
+        if(!replyMsg)return;
+        const cid=sd['Conversation ID']||'';
+        const stepOrder=sd['Step Order']||'';
+        const key=cid+'|'+stepOrder+'|'+replyMsg.slice(0,40);
+        if(seen.has(key))return;
+        seen.add(key);
+        const lead=allMap[cid]||{};
+        const ch=(sd['Step Channel']||'').toLowerCase();
+        const normCh=ch.includes('linkedin')?'LinkedIn':'Email';
+        const replyDate=lead['Last Inbound']||lead['First Email Response']||lead['First LI Response']||'';
+        const fmtDate=replyDate?new Date(replyDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+        rows.push({
+          'Name':sd['Person Name']||'',
+          'Role':lead['Person Title']||'',
+          'Company':sd['Company Name']||'',
+          'Email ID':sd['Person Email']||lead['Person Email']||'',
+          'LinkedIn URL':'',
+          'Campaign':sd['Campaign']||lead['Campaign']||'',
+          'Channel':normCh,
+          'Sender':lead['Sender']||'',
+          'Response Type':autoDetectRespType(replyMsg),
+          'Next Step':'',
+          'Msgs Before Reply':String(stepOrder),
+          'Response Date':fmtDate,
+          '_replyMsg':replyMsg,
+          '_sortDate':replyDate
+        });
+      });
+      rows.sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
+      RESP_ALL=rows;
+    }
     RESP_FLT=[...RESP_ALL];
     try{const dates=ALL.map(r=>r['Campaign Started']).filter(Boolean).sort();if(dates[0]){const d=new Date(dates[0]);document.getElementById('campDate').textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});document.getElementById('weekBadge').textContent=`Week ${Math.max(1,Math.ceil((Date.now()-d.getTime())/(7*86400000)))}`}}catch(e){}
     document.getElementById('updDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
