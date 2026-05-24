@@ -376,13 +376,17 @@
   <!-- ============================================================ -->
   <div class="view" id="v-detail">
 
-    <div class="sboard" style="grid-template-columns:repeat(6,1fr);">
-      <div class="sc primary" data-drill="leads" title="Total number of individual leads in the pipeline"><div class="sc-v" id="d_leads">--</div><div class="sc-l">Leads</div></div>
-      <div class="sc" data-drill="companies" title="Unique companies represented across all leads"><div class="sc-v" id="d_cos">--</div><div class="sc-l">Companies</div></div>
-      <div class="sc" data-drill="emails_sent" title="Total email sends including follow-ups"><div class="sc-v" id="d_email">--</div><div class="sc-l">Emails Sent</div></div>
-      <div class="sc" data-drill="li_requests" title="LinkedIn connection requests actually sent to leads"><div class="sc-v" id="d_li">--</div><div class="sc-l">LinkedIn Requests</div></div>
-      <div class="sc" data-drill="li_dms" title="Direct messages sent to leads after they accepted the LinkedIn connection"><div class="sc-v" id="d_liDM">--</div><div class="sc-l">LinkedIn DMs Sent</div></div>
-      <div class="sc primary" data-drill="replies" title="Total inbound replies across email and LinkedIn"><div class="sc-v" id="d_reply">--</div><div class="sc-l">Replies</div></div>
+    <div class="sboard" style="grid-template-columns:repeat(5,1fr);">
+      <div class="sc primary" data-drill="leads"><div class="sc-v" id="d_leads">--</div><div class="sc-l">Leads</div></div>
+      <div class="sc" data-drill="companies"><div class="sc-v" id="d_cos">--</div><div class="sc-l">Companies</div></div>
+      <div class="sc" data-drill="emails_sent"><div class="sc-v" id="d_email">--</div><div class="sc-l">Emails Sent</div></div>
+      <div class="sc c-blue" data-drill="li_requests"><div class="sc-v" id="d_li">--</div><div class="sc-l">LinkedIn Connections Sent</div></div>
+      <div class="sc c-blue" data-drill="li_dms"><div class="sc-v" id="d_liDM">--</div><div class="sc-l">LinkedIn DMs Sent</div></div>
+      <div class="sc primary" data-drill="replies"><div class="sc-v" id="d_reply">--</div><div class="sc-l">Replies</div></div>
+      <div class="sc c-green"><div class="sc-v" id="d_meetings">--</div><div class="sc-l">Meetings Booked</div></div>
+      <div class="sc c-green"><div class="sc-v" id="d_warm">--</div><div class="sc-l">Warm Pipeline</div></div>
+      <div class="sc"><div class="sc-v" id="d_emailRate">--</div><div class="sc-l">Email Reply Rate %</div></div>
+      <div class="sc c-blue"><div class="sc-v" id="d_dmRate">--</div><div class="sc-l">LinkedIn DM Reply Rate %</div></div>
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:10px;" id="dEnrichment"></div>
@@ -1252,12 +1256,20 @@ function render(){
   document.getElementById('exAB').innerHTML=abH;
 
   // === DETAILED VIEW ===
+  const warmCids=new Set(RESP_ALL.filter(r=>r['Response Type']==='Interested'||r['Response Type']==='Soft Maybe').map(r=>r['_key'].split('|')[0]));
+  const dWarm=D.filter(r=>warmCids.has(r['Conversation ID'])).length;
+  const dEmailRate=eD>0?((eR/eD)*100).toFixed(1)+'%':'--';
+  const dDmRate=lM>0?((lR/lM)*100).toFixed(1)+'%':'--';
   document.getElementById('d_leads').textContent=D.length.toLocaleString();
   document.getElementById('d_cos').textContent=U(D,'Company Name').toLocaleString();
   document.getElementById('d_email').textContent=eS.toLocaleString();
   document.getElementById('d_li').textContent=lS.toLocaleString();
   document.getElementById('d_liDM').textContent=lM.toLocaleString();
   document.getElementById('d_reply').textContent=tR.toLocaleString();
+  document.getElementById('d_meetings').textContent=meets.toLocaleString();
+  document.getElementById('d_warm').textContent=dWarm.toLocaleString();
+  document.getElementById('d_emailRate').textContent=dEmailRate;
+  document.getElementById('d_dmRate').textContent=dDmRate;
 
   // Lead enrichment (detailed view) - reuse same counts from exec
   document.getElementById('dEnrichment').innerHTML=
