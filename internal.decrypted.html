@@ -2082,21 +2082,43 @@ init();
 function autoDetectRespType(msg){
   if(!msg)return'';
   const m=msg.toLowerCase();
-  if(m.includes('out of office')||m.includes('out of the office')||m.includes('annual leave')||m.includes('on leave')||m.includes('on holiday')||m.includes('vacation')||m.includes('ooo'))return'Out of Office';
-  if(m.includes('not interested')||m.includes('no thank')||m.includes('not relevant')||m.includes('not the right')||m.includes("don't have any role")||m.includes('no role')||m.includes('not looking')||m.includes('unsubscribe'))return'Not Interested';
-  if(m.includes('in-house')||m.includes('in house')||m.includes('internal team')||m.includes('own team')||m.includes('handle it internally'))return'Has In-House Team';
-  if(m.includes('interested')||m.includes('tell me more')||m.includes('sounds good')||m.includes('please send')||m.includes('we would like')||m.includes('would love')||m.includes('let\'s connect')||m.includes('lets connect')||m.includes('yes please'))return'Interested';
-  if(m.includes('maybe')||m.includes('possibly')||m.includes('let me check')||m.includes('get back to you')||m.includes('will revert')||m.includes('touch base')||m.includes('in touch'))return'Soft Maybe / Needs Nurturing';
+  // Auto-reply / delivery noise — check before anything else
+  if(m.includes('this is an automated')||m.includes('auto-reply')||m.includes('automatic reply')||m.includes('automatic response')||m.includes('do not reply to this')||m.includes('noreply')||m.includes('delivery notification')||m.includes('undeliverable'))return'Auto-Reply';
+  // Out of office
+  if(m.includes('out of office')||m.includes('out of the office')||m.includes('annual leave')||m.includes('on leave')||m.includes('on holiday')||m.includes('vacation')||m.includes('ooo')||m.includes('away until')||m.includes('returning on')||m.includes('back on'))return'Out of Office';
+  // Unsubscribe
+  if(m.includes('unsubscribe')||m.includes('remove me')||m.includes('stop emailing')||m.includes('please don\'t contact')||m.includes('opt out')||m.includes('take me off')||m.includes('do not contact'))return'Unsubscribe';
+  // Wrong person / redirect
+  if(m.includes('not the right person')||m.includes('not my area')||m.includes('no longer in')||m.includes('moved on from')||m.includes('changed roles')||m.includes('not responsible for')||m.includes('wrong contact')||m.includes('no longer responsible')||m.includes('not in the finance')||m.includes('no longer in the'))return'Wrong Person';
+  // Has existing supplier (check before in-house)
+  if(m.includes('already have a tmc')||m.includes('locked in with')||m.includes('under contract')||m.includes('preferred supplier')||m.includes('existing provider')||m.includes('signed with')||m.includes('mandated supplier')||m.includes('globally mandated')||m.includes('operate via our'))return'Has Existing Supplier';
+  // Has in-house team
+  if(m.includes('in-house')||m.includes('in house')||m.includes('internal team')||m.includes('own team')||m.includes('handle it internally')||m.includes('handle it ourselves')||m.includes('own travel team')||m.includes('in-house team')||m.includes('conferencing and event management team'))return'Has In-House Team';
+  // Not interested (check before interested to avoid false match)
+  if(m.includes('not interested')||m.includes('no thank')||m.includes('not relevant')||m.includes('not the right fit')||m.includes('don\'t have any role')||m.includes('no role')||m.includes('not looking')||m.includes('pass on this')||m.includes('no thanks'))return'Not Interested';
+  // Referral given
+  if(m.includes('speak to ')||m.includes('contact my colleague')||m.includes('copy in')||m.includes('loop in')||m.includes('best person would be')||m.includes('reach out to')||m.includes('you should speak')||m.includes('better to contact')||m.includes('cc\'ing')||m.includes('ccing'))return'Referral Given';
+  // Interested (includes meeting booked signals)
+  if(m.includes('interested')||m.includes('tell me more')||m.includes('sounds good')||m.includes('please send')||m.includes('we would like')||m.includes('would love')||m.includes('let\'s connect')||m.includes('lets connect')||m.includes('yes please')||m.includes('open to a call')||m.includes('keen to explore')||m.includes('booked')||m.includes('calendar invite')||m.includes('confirmed')||m.includes('see you')||m.includes('scheduled')||m.includes('send me more')||m.includes('pop me your'))return'Interested';
+  // Timing — not now
+  if(m.includes('budget freeze')||m.includes('budget frozen')||m.includes('currently under review')||m.includes('not this quarter')||m.includes('revisit in')||m.includes('next year')||m.includes('pause for now')||m.includes('on hold')||m.includes('not the right time')||m.includes('not right now'))return'Timing — Not Now';
+  // Soft maybe
+  if(m.includes('maybe')||m.includes('possibly')||m.includes('let me check')||m.includes('get back to you')||m.includes('will revert')||m.includes('touch base')||m.includes('keep in touch')||m.includes('in touch'))return'Soft Maybe';
   return'';
 }
 function rtTypeClass(t){
   const l=(t||'').toLowerCase();
-  if(l.includes('interested')&&!l.includes('not'))return'b-green';
-  if(l.includes('soft')||l.includes('nurtur'))return'b-yellow';
-  if(l.includes('in-house')||l.includes('in house'))return'b-blue-li';
-  if(l.includes('redirect')||l.includes('low relevance'))return'b-purple';
-  if(l.includes('out of office'))return'b-slate';
-  if(l.includes('not interested'))return'b-red';
+  if(l==='interested')return'b-green';
+  if(l==='referral given')return'b-blue-li';
+  if(l==='soft maybe')return'b-yellow';
+  if(l==='timing — not now')return'b-yellow';
+  if(l==='has existing supplier')return'b-purple';
+  if(l==='has in-house team')return'b-purple';
+  if(l==='not interested')return'b-red';
+  if(l==='unsubscribe')return'b-red';
+  if(l==='wrong person')return'b-slate';
+  if(l==='out of office')return'b-slate';
+  if(l==='auto-reply')return'b-slate';
   return'b-gray';
 }
 function populateRtFilter(elId,field,data,defaultLabel){
