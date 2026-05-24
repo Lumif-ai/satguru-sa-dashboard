@@ -576,22 +576,19 @@
         <table class="dt" id="rtTable">
           <thead>
             <tr>
+              <th>Response Date</th>
+              <th>Campaign</th>
               <th>Name</th>
               <th>Role</th>
               <th>Company</th>
+              <th>Channel</th>
               <th>Email ID</th>
               <th>LinkedIn URL</th>
-              <th>Campaign</th>
               <th>Response Received</th>
-              <th>Channel</th>
               <th>Sender</th>
               <th>Response Type</th>
               <th>Next Step</th>
               <th class="r">Msgs Before Reply</th>
-              <th class="r">Response Date</th>
-              <th class="r">Action Taken</th>
-              <th class="r">Last Message</th>
-              <th class="r">Days Since</th>
             </tr>
           </thead>
           <tbody id="rtTbody"></tbody>
@@ -2108,11 +2105,11 @@ function autoDetectRespType(msg){
   // Has in-house team
   if(m.includes('in-house')||m.includes('in house')||m.includes('internal team')||m.includes('own team')||m.includes('handle it internally')||m.includes('handle it ourselves')||m.includes('own travel team')||m.includes('in-house team')||m.includes('conferencing and event management team'))return'Has In-House Team';
   // Not interested (check before interested to avoid false match)
-  if(m.includes('not interested')||m.includes('no thank')||m.includes('not relevant')||m.includes('not the right fit')||m.includes('don\'t have any role')||m.includes('no role')||m.includes('not looking')||m.includes('pass on this')||m.includes('no thanks'))return'Not Interested';
+  if(m.includes('not interested')||m.includes('no thank')||m.includes('no, thanks')||m.includes('not relevant')||m.includes('not the right fit')||m.includes('don\'t have any role')||m.includes('no role')||m.includes('not looking')||m.includes('pass on this')||m.includes('no thanks')||m.includes('no requirement')||m.includes('not a requirement')||/^no[.!?\s]*$/.test(m.trim()))return'Not Interested';
   // Referral given
-  if(m.includes('speak to ')||m.includes('contact my colleague')||m.includes('copy in')||m.includes('loop in')||m.includes('best person would be')||m.includes('reach out to')||m.includes('you should speak')||m.includes('better to contact')||m.includes('cc\'ing')||m.includes('ccing'))return'Referral Given';
+  if(m.includes('speak to ')||m.includes('contact my colleague')||m.includes('copy in')||m.includes('loop in')||m.includes('looping in')||m.includes('best person would be')||m.includes('reach out to')||m.includes('you should speak')||m.includes('better to contact')||m.includes('cc\'ing')||m.includes('ccing')||m.includes('forward your')||m.includes('forwarded your')||m.includes('shared your'))return'Referral Given';
   // Interested (includes meeting booked signals)
-  if(m.includes('interested')||m.includes('tell me more')||m.includes('sounds good')||m.includes('please send')||m.includes('we would like')||m.includes('would love')||m.includes('let\'s connect')||m.includes('lets connect')||m.includes('yes please')||m.includes('open to a call')||m.includes('keen to explore')||m.includes('booked')||m.includes('calendar invite')||m.includes('confirmed')||m.includes('see you')||m.includes('scheduled')||m.includes('send me more')||m.includes('pop me your'))return'Interested';
+  if(m.includes('interested')||m.includes('tell me more')||m.includes('sounds good')||m.includes('please send')||m.includes('we would like')||m.includes('would love')||m.includes('let\'s connect')||m.includes('lets connect')||m.includes('yes please')||m.includes('open to a call')||m.includes('keen to explore')||m.includes('booked')||m.includes('calendar invite')||m.includes('confirmed')||m.includes('see you')||m.includes('scheduled')||m.includes('send me more')||m.includes('pop me your')||m.includes('can you share')||m.includes('share your')||m.includes('do you have')||m.includes('have a chat')||m.includes('scheduled a meeting')||m.includes('chat'))return'Interested';
   // Timing — not now
   if(m.includes('budget freeze')||m.includes('budget frozen')||m.includes('currently under review')||m.includes('not this quarter')||m.includes('revisit in')||m.includes('next year')||m.includes('pause for now')||m.includes('on hold')||m.includes('not the right time')||m.includes('not right now'))return'Timing — Not Now';
   // Soft maybe
@@ -2168,7 +2165,7 @@ function renderResponseTracker(){
   // Scorecards
   const emailResp=d.filter(r=>r['Channel']==='Email').length;
   const liResp=d.filter(r=>r['Channel']==='LinkedIn').length;
-  const warmCount=d.filter(r=>{const t=(r['Response Type']||'').toLowerCase();return(t.includes('interested')&&!t.includes('not'))||t.includes('soft')||t.includes('nurtur');}).length;
+  const warmCount=d.filter(r=>{const t=(r['Response Type']||'').trim();return t==='Interested'||t==='Soft Maybe';}).length;
   const totalLiDms=S(ALL,'LI Messages Sent');
   const totalLiReplies=S(ALL,'LI Replies');
   const totalEmailDel=S(ALL,'Email Delivered');
@@ -2199,22 +2196,19 @@ function renderResponseTracker(){
     const emailId=r['Email ID']||'';
     const liUrl=r['LinkedIn URL']||'';
     return `<tr>
+      <td style="white-space:nowrap;">${r['Response Date']||'--'}</td>
+      <td>${r['Campaign']||'--'}</td>
       <td class="nm">${r['Name']||'--'}</td>
       <td>${r['Role']||'--'}</td>
       <td>${r['Company']||'--'}</td>
+      <td>${r['Channel']||'--'}</td>
       <td>${emailId?'<a href="mailto:'+emailId+'" style="color:var(--brand);text-decoration:none;">'+emailId+'</a>':'--'}</td>
       <td>${liUrl?'<a href="'+liUrl+'" target="_blank" style="color:#2563EB;text-decoration:none;">View ↗</a>':'--'}</td>
-      <td>${r['Campaign']||'--'}</td>
       <td><div class="rt-reply-msg">${r['_replyMsg']?(r['_replyMsg'].length>150?r['_replyMsg'].substring(0,150)+'…':r['_replyMsg']):'--'}</div></td>
-      <td>${r['Channel']||'--'}</td>
       <td>${r['Sender']||'--'}</td>
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
       <td style="font-size:10px;color:var(--g500);">${r['Next Step']||'--'}</td>
       <td class="r">${r['Msgs Before Reply']||'--'}</td>
-      <td class="r" style="white-space:nowrap;">${r['Response Date']||'--'}</td>
-      <td class="r">--</td>
-      <td class="r">--</td>
-      <td class="r">--</td>
     </tr>`;
   }).join('');
 }
