@@ -88,6 +88,7 @@ function transformForDashboard() {
         conversation_id: convId,
         person_name: row[col["person_name"]] || "",
         person_email: row[col["person_email"]] || "",
+        linkedin_url: row[col["lead_linkedin_url"]] || "",
         person_title: row[col["person_title"]] || "",
         person_city: row[col["person_city"]] || "",
         person_country: row[col["person_country"]] || "",
@@ -434,7 +435,7 @@ function transformForDashboard() {
   // 3. WRITE LEAD SUMMARY SHEET
   // ============================================================
   const leadHeaders = [
-    "Conversation ID", "Person Name", "Person Email", "Person Title", "Role Category",
+    "Conversation ID", "Person Name", "Person Email", "LinkedIn URL", "Person Title", "Role Category",
     "Person City", "Person Country",
     "Company Name", "Company Website", "Company City", "Company Employee Range", "Primary Industry",
     "Conversation Stage", "Automation Status", "Temperature",
@@ -456,7 +457,7 @@ function transformForDashboard() {
   ];
 
   const leadRows = leadArray.map(l => [
-    l.conversation_id, l.person_name, l.person_email, l.person_title, l.role_category,
+    l.conversation_id, l.person_name, l.person_email, l.linkedin_url, l.person_title, l.role_category,
     l.person_city, l.person_country,
     l.company_name, l.company_website, l.company_city, l.company_employee_range, l.primary_industry,
     l.conversation_stage, l.automation_status, l.temperature,
@@ -980,3 +981,4 @@ function removeAutoRefreshTrigger() {
   });
   SpreadsheetApp.getUi().alert("Removed " + removed + " trigger(s).");
 }
+
