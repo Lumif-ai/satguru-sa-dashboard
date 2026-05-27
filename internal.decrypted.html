@@ -222,6 +222,12 @@
   .rt-next-step:hover { background:var(--g100); }
   .rt-next-step:focus { background:var(--g100); box-shadow:0 0 0 2px rgba(233,77,53,0.2); }
   .rt-next-step:empty::before { content:attr(data-placeholder); color:var(--g300); font-style:italic; pointer-events:none; }
+  .rt-last-msg { font-size:11px; color:var(--g600); line-height:1.4; max-width:260px; white-space:normal; }
+  .rt-last-msg-sender { font-size:9px; font-weight:700; color:var(--g400); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
+  .days-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+  .days-badge.green  { background:rgba(16,185,129,0.1); color:#059669; }
+  .days-badge.amber  { background:rgba(245,158,11,0.1);  color:#D97706; }
+  .days-badge.red    { background:rgba(239,68,68,0.1);   color:#DC2626; }
   .rt-action-pill { display:inline-block; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; }
   .rt-action-pill.done { background:rgba(16,185,129,0.1); color:#059669; }
   .rt-action-pill.pending { background:rgba(245,158,11,0.1); color:#D97706; }
@@ -593,12 +599,13 @@
               <th>Email ID</th>
               <th>LinkedIn URL</th>
               <th>Response Received</th>
+              <th>Last Message</th>
               <th>Sender</th>
               <th>Response Type</th>
               <th>Next Step</th>
               <th class="r">Msgs Before Reply</th>
               <th>Action Taken</th>
-              <th class="r">Days Since</th>
+              <th class="r">Days Since Response</th>
             </tr>
           </thead>
           <tbody id="rtTbody"></tbody>
@@ -2074,6 +2081,34 @@ async function init(){
           return hasMsg&&so<=stepOrder;
         }).length;
         const rowKey=cid+'|'+stepOrder;
+        // Last message: compare last outbound vs last inbound to find most recent
+        const lastOut=lead['Last Outbound']||'';
+        const lastIn=replyDate;
+        let lastMsgText=replyMsg,lastMsgSender=sd['Person Name']||'';
+        if(lastOut&&lastIn&&new Date(lastOut)>new Date(lastIn)){
+          // Our outbound was more recent — find latest outbound step after the reply
+          const outAfter=(stepsByConv[cid]||[]).filter(s=>{
+            const sAt=s['Email Sent At']||s['LI DM Sent At']||'';
+            return s['Outbound Message']&&sAt&&new Date(sAt)>new Date(lastIn);
+          }).sort((a,b)=>new Date(b['Email Sent At']||b['LI DM Sent At']||0)-new Date(a['Email Sent At']||a['LI DM Sent At']||0));
+          if(outAfter.length>0){lastMsgText=outAfter[0]['Outbound Message'];lastMsgSender=lead['Sender']||'';}
+        }
+        // Days since response calculation
+        let daysSinceVal='--',daysSinceCls='';
+        if(lastIn){
+          const inMs=new Date(lastIn).getTime();
+          if(lastOut&&new Date(lastOut)>new Date(lastIn)){
+            // We responded — show how long we took
+            const days=Math.floor((new Date(lastOut).getTime()-inMs)/86400000);
+            daysSinceVal=days===0?'Same day':days+'d to respond';
+            daysSinceCls='green';
+          }else{
+            // Still pending — show days since client replied
+            const days=Math.floor((Date.now()-inMs)/86400000);
+            daysSinceVal=days+'d pending';
+            daysSinceCls=days<=3?'green':days<=7?'amber':'red';
+          }
+        }
         rows.push({
           'Name':sd['Person Name']||'',
           'Role':lead['Person Title']||'',
@@ -2090,7 +2125,11 @@ async function init(){
           'Response Date':fmtDate,
           '_replyMsg':replyMsg,
           '_sortDate':replyDate,
-          '_key':rowKey
+          '_key':rowKey,
+          '_lastMsgText':lastMsgText,
+          '_lastMsgSender':lastMsgSender,
+          '_daysSinceVal':daysSinceVal,
+          '_daysSinceCls':daysSinceCls
         });
       });
       rows.sort((a,b)=>new Date(b['_sortDate']||0)-new Date(a['_sortDate']||0));
@@ -2226,12 +2265,13 @@ function renderResponseTracker(){
       <td>${emailId?'<a href="mailto:'+emailId+'" style="color:var(--brand);text-decoration:none;">'+emailId+'</a>':'--'}</td>
       <td>${liUrl?'<a href="'+liUrl+'" target="_blank" style="color:#2563EB;text-decoration:none;">View ↗</a>':'--'}</td>
       <td><div class="rt-reply-msg">${r['_replyMsg']?(r['_replyMsg'].length>150?r['_replyMsg'].substring(0,150)+'…':r['_replyMsg']):'--'}</div></td>
+      <td><div class="rt-last-msg"><div class="rt-last-msg-sender">${r['_lastMsgSender']||''}</div>${r['_lastMsgText']?(r['_lastMsgText'].length>150?r['_lastMsgText'].substring(0,150)+'…':r['_lastMsgText']):'--'}</div></td>
       <td>${r['Sender']||'--'}</td>
       <td>${typ?'<span class="badge '+rtTypeClass(typ)+'">'+typ+'</span>':'--'}</td>
       <td><div class="rt-next-step" contenteditable="true" data-key="${r['_key']}" data-placeholder="Add note…" onblur="saveRtNextStep(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur();}">${r['Next Step']?r['Next Step'].replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}</div></td>
       <td class="r">${r['Msgs Before Reply']||'--'}</td>
       <td></td>
-      <td class="r"></td>
+      <td class="r">${r['_daysSinceVal']&&r['_daysSinceVal']!=='--'?'<span class="days-badge '+r['_daysSinceCls']+'">'+r['_daysSinceVal']+'</span>':'--'}</td>
     </tr>`;
   }).join('');
 }
