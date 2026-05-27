@@ -2053,6 +2053,14 @@ async function init(){
     // Build Response Tracker from STEP_DETAIL (has all replied leads) joined with ALL for sender/date
     {
       const allMap={};ALL.forEach(r=>{allMap[r['Conversation ID']]=r;});
+      // Build lookup from CONV_DUMP for email and LinkedIn URL (most direct source)
+      const convDumpMap={};
+      CONV_DUMP.forEach(r=>{
+        const cid=r['conversation_id'];
+        if(cid&&!convDumpMap[cid]){
+          convDumpMap[cid]={email:r['person_email']||'',linkedin:r['lead_linkedin_url']||''};
+        }
+      });
       // Index all steps per conversation for Msgs Before Reply calculation
       const stepsByConv={};
       STEP_DETAIL.forEach(sd=>{
@@ -2113,8 +2121,8 @@ async function init(){
           'Name':sd['Person Name']||'',
           'Role':lead['Person Title']||'',
           'Company':sd['Company Name']||'',
-          'Email ID':lead['Person Email']||sd['Person Email']||'',
-          'LinkedIn URL':lead['LinkedIn URL']||'',
+          'Email ID':(convDumpMap[cid]&&convDumpMap[cid].email)||lead['Person Email']||sd['Person Email']||'',
+          'LinkedIn URL':(convDumpMap[cid]&&convDumpMap[cid].linkedin)||'',
           'Campaign':sd['Campaign']||lead['Campaign']||'',
           'Channel':normCh,
           'Sender':lead['Sender']||'',
