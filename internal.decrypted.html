@@ -1234,9 +1234,30 @@ function render(){
       <span style="font-size:9px;color:var(--g400);">(${pct}%)</span>
     </div>`;
   }
+  // People Delivery % — deduped to PEOPLE, not per-send/per-lead. Of the unique
+  // people we emailed, what share received at least one delivered email. People
+  // are keyed by email (LinkedIn-only/no-email leads have no sends, so they don't
+  // affect this); a person counts as delivered if ANY of their sends delivered.
+  const _pg={};
+  D.forEach(r=>{
+    const k=(r['Person Email']||'').toString().toLowerCase().trim()||('__c'+r['Conversation ID']);
+    if(!_pg[k])_pg[k]={s:0,d:0};
+    _pg[k].s+=N(r['Email Sent']);
+    _pg[k].d+=N(r['Email Delivered']);
+  });
+  const _ppl=Object.values(_pg);
+  const _emailed=_ppl.filter(g=>g.s>0).length;
+  const _deliv=_ppl.filter(g=>g.d>0).length;
+  const pplDelivPct=_emailed>0?(_deliv/_emailed*100).toFixed(0):'--';
+  const peopleDeliveryHead=`<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;width:100%;">
+    <span style="font-size:26px;font-weight:800;color:#22C55E;">${pplDelivPct}%</span>
+    <span style="font-size:12px;font-weight:600;color:var(--g600);">People Delivery</span>
+    <span style="font-size:10px;color:var(--g400);">${_deliv.toLocaleString()} of ${_emailed.toLocaleString()} people emailed received ≥1 delivery</span>
+  </div>`;
   let emailStatusHtml='';
   statusOrder.forEach(s=>{if(statusCounts[s])emailStatusHtml+=statusChip(s,statusCounts[s])});
   if(statusCounts['Unknown'])emailStatusHtml+=statusChip('Unknown',statusCounts['Unknown']);
+  emailStatusHtml=peopleDeliveryHead+'<div style="display:flex;gap:8px;flex-wrap:wrap;">'+emailStatusHtml+'</div>';
   document.getElementById('exEmailStatus').innerHTML=emailStatusHtml;
 
   // A/B
@@ -2022,7 +2043,7 @@ async function init(){
       r.campaign=r['Campaign']||normCamp(r['Campaign Name']||seqField);
     });
     // Exclude test leads (Team/internal lumif.ai leads) but keep any that have replies
-    ALL=ALL.filter(r=>r.sender!=='Team'||N(r['Total Replies'])>0);
+    ALL=ALL.filter(r=>r.sender!=='Nandita Ghosh'); // exclude internal sender (Sender now from real sender_name col)
     // Fetch Step Performance sheet
     try{
       const spUrl=`https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(STEP_PERF_SHEET)}`;

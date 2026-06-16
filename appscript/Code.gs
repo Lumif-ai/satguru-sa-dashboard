@@ -107,8 +107,10 @@ function transformForDashboard() {
         sequence_name_raw: seqName,
         sequence_name: normalizeCampaignName(seqName),
 
+        // Sender: use the real sender_name column (CI) when present; the
+        // sequence-name guesser (deriveSender) is only a last-resort fallback.
         // Derived fields: config override > data-driven > fallback
-        sender: config.sender || deriveSender(seqName),
+        sender: config.sender || (row[col["sender_name"]] || "").toString().trim() || deriveSender(seqName),
         channel_strategy: config.channel || deriveChannelFromData(channels),
         messaging_version: config.version || deriveVersion(seqName),
 
@@ -171,22 +173,29 @@ function transformForDashboard() {
 
         // Enrichment (OR-aggregated across steps)
         phone_enriched: false,
+
+        // Person-level dedupe (one human can be re-enrolled as several
+        // conversation_ids, e.g. an "_Repeat" campaign). Filled in a later pass.
+        is_primary_person: 1,
+        person_conversation_count: 1,
+        person_emailed: 0,
+        person_any_delivered: 0,
       };
     }
 
     const lead = leads[convId];
     lead.total_steps++;
 
-    const stepOrder = num(row, col["step_order"]);
+    const stepOrder = cellNum(row, col["step_order"]);
     if (stepOrder > lead.max_step_order) lead.max_step_order = stepOrder;
 
     // Email
-    lead.email_sent += num(row, col["email_sent_count"]);
-    lead.email_failed += num(row, col["email_failed_count"]);
-    lead.email_delivered += num(row, col["email_delivered_count"]);
-    lead.email_bounced += num(row, col["email_bounced_count"]);
-    lead.email_reply += num(row, col["email_reply_count"]);
-    lead.email_clicked += num(row, col["email_clicked_count"]);
+    lead.email_sent += cellNum(row, col["email_sent_count"]);
+    lead.email_failed += cellNum(row, col["email_failed_count"]);
+    lead.email_delivered += cellNum(row, col["email_delivered_count"]);
+    lead.email_bounced += cellNum(row, col["email_bounced_count"]);
+    lead.email_reply += cellNum(row, col["email_reply_count"]);
+    lead.email_clicked += cellNum(row, col["email_clicked_count"]);
 
     // SendGrid metrics
     if (col["sendgrid_email_status"] !== undefined) {
@@ -204,11 +213,11 @@ function transformForDashboard() {
       }
     }
     if (col["sendgrid_opens_count"] !== undefined) {
-      const opens = num(row, col["sendgrid_opens_count"]);
+      const opens = cellNum(row, col["sendgrid_opens_count"]);
       if (opens > lead.sg_opens) lead.sg_opens = opens;
     }
     if (col["sendgrid_clicks_count"] !== undefined) {
-      const clicks = num(row, col["sendgrid_clicks_count"]);
+      const clicks = cellNum(row, col["sendgrid_clicks_count"]);
       if (clicks > lead.sg_clicks) lead.sg_clicks = clicks;
     }
     if (col["sendgrid_last_event_time"] !== undefined && row[col["sendgrid_last_event_time"]]) {
@@ -220,19 +229,19 @@ function transformForDashboard() {
     }
 
     // LinkedIn step-level
-    lead.li_conn_actions += num(row, col["step_linkedin_connection_actions"]);
-    lead.li_conn_sent += num(row, col["step_linkedin_connection_action_sent"]);
-    lead.li_msg_actions += num(row, col["step_linkedin_message_actions"]);
-    lead.li_msg_sent += num(row, col["step_linkedin_message_sent"]);
+    lead.li_conn_actions += cellNum(row, col["step_linkedin_connection_actions"]);
+    lead.li_conn_sent += cellNum(row, col["step_linkedin_connection_action_sent"]);
+    lead.li_msg_actions += cellNum(row, col["step_linkedin_message_actions"]);
+    lead.li_msg_sent += cellNum(row, col["step_linkedin_message_sent"]);
 
     // LinkedIn Aimfox
-    lead.li_pushed_to_aimfox += num(row, col["linkedin_pushed_to_aimfox_count"]);
-    lead.aimfox_conn_sent += num(row, col["aimfox_connection_request_sent_count"]);
-    lead.aimfox_accepted += num(row, col["aimfox_connection_accepted_event_count"]);
+    lead.li_pushed_to_aimfox += cellNum(row, col["linkedin_pushed_to_aimfox_count"]);
+    lead.aimfox_conn_sent += cellNum(row, col["aimfox_connection_request_sent_count"]);
+    lead.aimfox_accepted += cellNum(row, col["aimfox_connection_accepted_event_count"]);
 
     // Aimfox reply
     if (col["aimfox_reply_count"] !== undefined) {
-      lead.aimfox_reply += num(row, col["aimfox_reply_count"]);
+      lead.aimfox_reply += cellNum(row, col["aimfox_reply_count"]);
     }
 
     // Phone enrichment (per-step boolean — lead is enriched if ANY step is true)
@@ -245,16 +254,16 @@ function transformForDashboard() {
 
     // Activity check
     const stepChannel = (row[col["step_channel"]] || "").toString();
-    const stepEmailSent = num(row, col["email_sent_count"]);
-    const stepEmailDelivered = num(row, col["email_delivered_count"]);
-    const stepEmailBounced = num(row, col["email_bounced_count"]);
-    const stepEmailReply = num(row, col["email_reply_count"]);
-    const stepEmailClicked = num(row, col["email_clicked_count"]);
-    const stepLiConnSent = num(row, col["step_linkedin_connection_action_sent"]);
-    const stepLiMsgSent = num(row, col["step_linkedin_message_sent"]);
-    const stepAimfoxConnSent = num(row, col["aimfox_connection_request_sent_count"]);
-    const stepAimfoxAccepted = num(row, col["aimfox_connection_accepted_event_count"]);
-    const stepAimfoxReply = col["aimfox_reply_count"] !== undefined ? num(row, col["aimfox_reply_count"]) : 0;
+    const stepEmailSent = cellNum(row, col["email_sent_count"]);
+    const stepEmailDelivered = cellNum(row, col["email_delivered_count"]);
+    const stepEmailBounced = cellNum(row, col["email_bounced_count"]);
+    const stepEmailReply = cellNum(row, col["email_reply_count"]);
+    const stepEmailClicked = cellNum(row, col["email_clicked_count"]);
+    const stepLiConnSent = cellNum(row, col["step_linkedin_connection_action_sent"]);
+    const stepLiMsgSent = cellNum(row, col["step_linkedin_message_sent"]);
+    const stepAimfoxConnSent = cellNum(row, col["aimfox_connection_request_sent_count"]);
+    const stepAimfoxAccepted = cellNum(row, col["aimfox_connection_accepted_event_count"]);
+    const stepAimfoxReply = col["aimfox_reply_count"] !== undefined ? cellNum(row, col["aimfox_reply_count"]) : 0;
 
     const stepActivity = stepEmailSent + stepLiConnSent + stepLiMsgSent + stepAimfoxConnSent;
     if (stepActivity > 0) lead.steps_with_activity++;
@@ -404,6 +413,20 @@ function transformForDashboard() {
     lead.email_opens = lead.sg_opens;
     lead.email_clicks = Math.max(lead.sg_clicks, lead.email_clicked);
 
+    // Delivered / bounced / failed are SendGrid EVENT counts that overlap and
+    // can exceed the number of sends (one send can log a failed then a
+    // delivered event across retries), so summing them inflates bounce/fail
+    // rates. Collapse to a clean per-send picture: cap delivered at sends, then
+    // split the remaining non-deliveries between bounced and failed in
+    // proportion to their raw signal. Guarantees delivered+bounced+failed==sent.
+    var rawBounced = lead.email_bounced;
+    var rawFailed = lead.email_failed;
+    lead.email_delivered = Math.min(lead.email_delivered, lead.email_sent);
+    var nonDelivered = lead.email_sent - lead.email_delivered;
+    var ndDenom = rawBounced + rawFailed;
+    lead.email_bounced = ndDenom > 0 ? Math.round(nonDelivered * rawBounced / ndDenom) : nonDelivered;
+    lead.email_failed = nonDelivered - lead.email_bounced;
+
     lead.total_touches = lead.email_sent + lead.li_conn_sent + lead.li_msg_sent;
     lead.total_replies = lead.email_reply + lead.aimfox_reply;
     lead.has_replied = lead.total_replies > 0 ? "Yes" : "No";
@@ -432,6 +455,41 @@ function transformForDashboard() {
   });
 
   // ============================================================
+  // 2b. PERSON-LEVEL DEDUPE
+  // The platform mints a NEW conversation_id each time a person is re-enrolled
+  // (e.g. an "_Repeat" campaign), so the same human shows up as several lead
+  // rows. Send-weighted rates (delivery/bounce/reply) SHOULD count every send,
+  // so per-lead counts are left untouched. But people-coverage metrics must
+  // count each person once — so we flag exactly ONE primary conversation per
+  // person, most engaged, tie-broken by earliest first send.
+  // Identity key cascade: email -> linkedin_url -> conversation_id (no-email
+  // LinkedIn leads never collapse together; conversation_id is the floor).
+  // ============================================================
+  const personGroups = {};
+  leadArray.forEach(lead => {
+    const email = (lead.person_email || "").toString().toLowerCase().trim();
+    const li = (lead.linkedin_url || "").toString().toLowerCase().trim().replace(/\/+$/, "");
+    const pid = email || li || ("__conv_" + lead.conversation_id);
+    if (!personGroups[pid]) personGroups[pid] = [];
+    personGroups[pid].push(lead);
+  });
+  Object.values(personGroups).forEach(group => {
+    const groupSent = group.reduce((sum, l) => sum + l.email_sent, 0);
+    const groupDelivered = group.reduce((sum, l) => sum + l.email_delivered, 0);
+    group.sort((a, b) => {
+      if (b.steps_with_activity !== a.steps_with_activity) return b.steps_with_activity - a.steps_with_activity;
+      if (b.total_replies !== a.total_replies) return b.total_replies - a.total_replies;
+      return (a.first_email_sent_at || "~").toString().localeCompare((b.first_email_sent_at || "~").toString());
+    });
+    group.forEach((lead, idx) => {
+      lead.is_primary_person = idx === 0 ? 1 : 0;
+      lead.person_conversation_count = group.length;
+      lead.person_emailed = groupSent > 0 ? 1 : 0;
+      lead.person_any_delivered = groupDelivered > 0 ? 1 : 0;
+    });
+  });
+
+  // ============================================================
   // 3. WRITE LEAD SUMMARY SHEET
   // ============================================================
   const leadHeaders = [
@@ -439,7 +497,8 @@ function transformForDashboard() {
     "Person City", "Person Country",
     "Company Name", "Company Website", "Company City", "Company Employee Range", "Primary Industry",
     "Conversation Stage", "Automation Status", "Temperature",
-    "Campaign", "Campaign Status", "Campaign Started",
+    "Campaign", "Campaign (Raw)", "Campaign Status", "Campaign Started",
+    "Is Primary (Person)", "Person Conversations",
     "Sequence", "Sender", "Channel Strategy", "Messaging Version",
     "Send Day (SAST)", "Send Hour (SAST)", "Send Time Bucket",
     "Email Sent", "Email Delivered", "Email Bounced", "Email Failed", "Email Replies",
@@ -461,7 +520,8 @@ function transformForDashboard() {
     l.person_city, l.person_country,
     l.company_name, l.company_website, l.company_city, l.company_employee_range, l.primary_industry,
     l.conversation_stage, l.automation_status, l.temperature,
-    l.campaign_name, l.campaign_status, l.campaign_started_at,
+    l.campaign_name, l.campaign_name_raw, l.campaign_status, l.campaign_started_at,
+    l.is_primary_person, l.person_conversation_count,
     l.sequence_name, l.sender, l.channel_strategy, l.messaging_version,
     l.send_day, l.send_hour_sast, l.send_time_bucket,
     l.email_sent, l.email_delivered, l.email_bounced, l.email_failed, l.email_reply,
@@ -545,7 +605,7 @@ function transformForDashboard() {
     "Total Leads", "Unique Companies",
     "Leads Contacted", "Leads Scheduled", "Leads Conn Scheduled",
     "Email Sent", "Email Delivered", "Email Bounced", "Email Failed", "Email Replies",
-    "Delivery Rate %", "Email Opens", "Email Clicks", "Open Rate %",
+    "Delivery Rate %", "Bounce Rate %", "Email Opens", "Email Clicks", "Open Rate %",
     "LI Connections Sent", "LI Accepted", "LI Acceptance Rate %",
     "LI Messages Sent", "LI Replies",
     "Total Touches", "Total Replies", "Reply Rate (All Touches) %",
@@ -554,6 +614,7 @@ function transformForDashboard() {
 
   const seqRows = Object.values(seqMap).map(s => {
     const delivRate = s.email_sent > 0 ? Math.round((s.email_delivered / s.email_sent) * 1000) / 10 : 0;
+    const bounceRate = s.email_sent > 0 ? Math.round((s.email_bounced / s.email_sent) * 1000) / 10 : 0;
     const openRate = s.email_delivered > 0 ? Math.round((s.email_opens / s.email_delivered) * 1000) / 10 : 0;
     const acceptRate = s.li_conn_sent > 0 ? Math.round((s.aimfox_accepted / s.li_conn_sent) * 1000) / 10 : 0;
     const replyRate = s.total_touches > 0 ? Math.round((s.total_replies / s.total_touches) * 1000) / 10 : 0;
@@ -567,7 +628,7 @@ function transformForDashboard() {
       s.leads, s.companies.size,
       s.leads_contacted, s.leads_scheduled, s.leads_conn_scheduled,
       s.email_sent, s.email_delivered, s.email_bounced, s.email_failed, s.email_reply,
-      delivRate, s.email_opens, s.email_clicks, openRate,
+      delivRate, bounceRate, s.email_opens, s.email_clicks, openRate,
       s.li_conn_sent, s.aimfox_accepted, acceptRate,
       s.li_msg_sent, s.aimfox_reply,
       s.total_touches, s.total_replies, replyRate,
@@ -594,6 +655,9 @@ function transformForDashboard() {
         campaign_status: lead.campaign_status,
         campaign_started_at: lead.campaign_started_at,
         leads: 0,
+        people: 0,
+        people_emailed: 0,
+        people_delivered: 0,
         companies: new Set(),
         sequences: new Set(),
         senders: new Set(),
@@ -616,6 +680,11 @@ function transformForDashboard() {
 
     const c = campMap[key];
     c.leads++;
+    if (lead.is_primary_person) {
+      c.people++;
+      if (lead.person_emailed) c.people_emailed++;
+      if (lead.person_any_delivered) c.people_delivered++;
+    }
     if (lead.company_name) c.companies.add(lead.company_name);
     c.sequences.add(lead.sequence_name);
     c.senders.add(lead.sender);
@@ -638,10 +707,11 @@ function transformForDashboard() {
 
   const campHeaders = [
     "Campaign Name", "Status", "Started At",
-    "Total Leads", "Unique Companies", "Sequences", "Senders",
+    "Total Leads", "Unique People", "People Emailed", "People Delivered", "People Delivery %",
+    "Unique Companies", "Sequences", "Senders",
     "Leads Contacted", "Leads Scheduled", "Leads Conn Scheduled",
     "Email Sent", "Email Delivered", "Email Bounced", "Email Failed", "Email Replies",
-    "Delivery Rate %",
+    "Delivery Rate %", "Bounce Rate %",
     "LI Connections Sent", "LI Accepted", "LI Acceptance Rate %",
     "LI Messages Sent", "LI Replies",
     "Total Touches", "Total Replies", "Reply Rate (All Touches) %",
@@ -650,6 +720,8 @@ function transformForDashboard() {
 
   const campRows = Object.values(campMap).map(c => {
     const delivRate = c.email_sent > 0 ? Math.round((c.email_delivered / c.email_sent) * 1000) / 10 : 0;
+    const bounceRate = c.email_sent > 0 ? Math.round((c.email_bounced / c.email_sent) * 1000) / 10 : 0;
+    const peopleDelivRate = c.people_emailed > 0 ? Math.round((c.people_delivered / c.people_emailed) * 1000) / 10 : 0;
     const acceptRate = c.li_conn_sent > 0 ? Math.round((c.aimfox_accepted / c.li_conn_sent) * 1000) / 10 : 0;
     const replyRate = c.total_touches > 0 ? Math.round((c.total_replies / c.total_touches) * 1000) / 10 : 0;
     const emailReplyRate = c.email_delivered > 0 ? Math.round((c.email_reply / c.email_delivered) * 1000) / 10 : 0;
@@ -659,12 +731,13 @@ function transformForDashboard() {
 
     return [
       c.campaign_name, c.campaign_status, c.campaign_started_at,
-      c.leads, c.companies.size,
+      c.leads, c.people, c.people_emailed, c.people_delivered, peopleDelivRate,
+      c.companies.size,
       Array.from(c.sequences).join(", "),
       Array.from(c.senders).join(", "),
       c.leads_contacted, c.leads_scheduled, c.leads_conn_scheduled,
       c.email_sent, c.email_delivered, c.email_bounced, c.email_failed, c.email_reply,
-      delivRate,
+      delivRate, bounceRate,
       c.li_conn_sent, c.aimfox_accepted, acceptRate,
       c.li_msg_sent, c.aimfox_reply,
       c.total_touches, c.total_replies, replyRate,
@@ -823,7 +896,7 @@ function transformForDashboard() {
 // HELPER FUNCTIONS
 // ============================================================
 
-function num(row, colIndex) {
+function cellNum(row, colIndex) {
   if (colIndex === undefined || colIndex === null) return 0;
   const val = row[colIndex];
   if (val === null || val === undefined || val === "") return 0;
@@ -852,14 +925,49 @@ function deriveChannelFromData(channels) {
   return "Unknown";
 }
 
+// Aliases map messy / legacy / non-conforming names onto a clean label.
+// Add an entry only for names that DON'T already lead with a clean industry
+// token — well-named new campaigns are auto-categorized below.
+var CAMPAIGN_ALIASES = [
+  { keywords: ["pharma"], label: "Pharmaceuticals" },
+  { keywords: ["embassy", "consulate"], label: "Embassies & Consulates" },
+  { keywords: ["travel", "global travel"], label: "Travel & Corporate" },
+];
+
 function normalizeCampaignName(name) {
   if (!name) return "Unknown";
-  var s = name.toLowerCase();
-  if (s.includes("pharma")) return "Pharmaceuticals";
-  if (s.includes("embassy") || s.includes("consulate")) return "Embassies & Consulates";
-  if (s.includes("travel") || s.includes("global travel")) return "Travel & Corporate";
-  if (s.includes("lead") && (s.includes("targeting") || s.includes("outreach"))) return "Lead Targeting";
-  return name;
+  var raw = name.toString().trim();
+  var s = raw.toLowerCase();
+
+  // 1) Compound special case (kept from original behaviour).
+  if (s.indexOf("lead") !== -1 && (s.indexOf("targeting") !== -1 || s.indexOf("outreach") !== -1)) {
+    return "Lead Targeting";
+  }
+
+  // 2) Known aliases win — handles legacy / non-conforming names.
+  for (var i = 0; i < CAMPAIGN_ALIASES.length; i++) {
+    var a = CAMPAIGN_ALIASES[i];
+    for (var k = 0; k < a.keywords.length; k++) {
+      if (s.indexOf(a.keywords[k]) !== -1) return a.label;
+    }
+  }
+
+  // 3) Foolproof auto-categorization. Campaigns are named
+  //    <Industry>_<Owner>_<Channel>_<Variant> (e.g. "Mining_Renier_Hybrid_A_Repeat").
+  //    Take the leading token as the industry — skipping pure-number / quarter
+  //    prefixes like "2026" or "Q1" — and Title Case it. A brand-new
+  //    "Retail_Renier_Hybrid_A" auto-becomes "Retail" with zero code changes.
+  var tokens = raw.split(/[_|\-\/]+/).map(function(t){ return t.trim(); }).filter(Boolean);
+  for (var t = 0; t < tokens.length; t++) {
+    if (/^\d+$/.test(tokens[t])) continue;     // skip "2026"
+    if (/^q[1-4]$/i.test(tokens[t])) continue; // skip "Q1".."Q4"
+    return titleCase(tokens[t]);
+  }
+  return raw;
+}
+
+function titleCase(str) {
+  return str.toString().toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
 }
 
 function deriveVersion(seqName) {
